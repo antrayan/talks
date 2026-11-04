@@ -31,11 +31,12 @@ BASE=/talks/ npm run build
 
 Output goes to `public/`: one folder per deck plus `index.html` listing all decks.
 
-Pages is a static host, so opening a slide URL directly (e.g. `/talks/git-basics/2`)
+GitHub Pages is a static host, so opening a slide URL directly (e.g. `/talks/git-basics/2`)
 gives a 404; clicking through from the deck root works. Need shareable slide links?
 Add `routerMode: hash` to that deck's frontmatter.
 
 ## Deploy
 
-Every push to the default branch runs the `pages` job in `.gitlab-ci.yml` and
-publishes to `https://<user>.gitlab.io/talks/`.
+Every push to `main` runs `.github/workflows/pages.yml` and publishes to
+`https://<user>.github.io/talks/`. One-time setup: repo Settings → Pages →
+Source: **GitHub Actions**.
