@@ -16,6 +16,8 @@ theme: default
 # First slide
 ```
 
+Want the dark minimal look? Use the local theme: `theme: ./themes/noir`.
+
 ## Preview locally
 
 ```bash
