@@ -21,9 +21,9 @@ How the JVM loads code — and why `Foo` can't be cast to `Foo`
 </div>
 
 <!--
-Open with a question: "Who has ever seen `ClassCastException: Foo cannot be cast to Foo`?"
+Start with a question: "Who has seen `ClassCastException: Foo cannot be cast to Foo`?" Usually half the room raises a hand. The other half hasn't read their logs yet.
 
-Plan: how the JVM loads code → why identical classes can be different → how to build a plugin system and stay sane.
+Plan: how the JVM loads code → why two identical classes can be different → how to build plugins and stay sane.
 -->
 
 ---
@@ -46,8 +46,8 @@ my-app
 <div>
 
 - Libraries bring their own dependencies
-- The same library arrives in **different versions**
-- Only **one** ends up on the classpath
+- Same library, **different versions**
+- Only **one** gets on the classpath
 
 <div v-click class="mt-8 text-2xl font-600">Which one?</div>
 
@@ -63,20 +63,24 @@ my-app
 <v-clicks>
 
 1. **Nearest wins** — closest to the root, *not* the newest
-2. **First declaration wins** — on equal depth
-3. **Direct dependency** beats any transitive one
-4. **`dependencyManagement` / BOM** — version enforced from above
-5. **`exclusions`** — cut a branch out by hand
+2. **Same depth?** First declared wins
+3. **Direct dependency** always wins — it's the nearest (depth 1)
+4. **`dependencyManagement` / BOM** — version forced from above
+5. **`exclusions`** — cut a branch by hand
 
 </v-clicks>
 
 <div v-click class="mt-8 text-lg">
-→ In our example <span class="accent font-600">2.15</span> wins, even though lib-C expects 2.17
+→ In our example <span class="accent font-600">2.15</span> wins, even though lib-C wants 2.17
 </div>
 
 <div v-click class="aside">
-A doorman lets in one person per surname. Who gets in depends on who stood <b>closest to the door</b>.
+A doorman lets in one person per surname. Not the youngest, not the best — whoever stands <b>closest to the door</b>.
 </div>
+
+<!--
+Rule 3 is not a separate rule. A direct dependency sits at depth 1, so "nearest wins" already covers it.
+-->
 
 ---
 
@@ -87,8 +91,11 @@ A doorman lets in one person per surname. Who gets in depends on who stood <b>cl
 <div class="grid grid-cols-2 gap-10">
 <div>
 
-- lib-C compiled against 2.17, got 2.15 → `NoSuchMethodError` **at runtime**
-- Same classes under different coordinates — `javax` vs `jakarta`, shaded copies → Maven ships **both**, first on classpath wins
+- lib-C built for 2.17, got 2.15 → `NoSuchMethodError` **at runtime**
+- Same packages, different coordinates → Maven ships **both**
+  - `javax.servlet:servlet-api` vs `jakarta.servlet-api` 4.x
+  - `commons-logging` vs `jcl-over-slf4j`
+- Shaded copy **without relocation** → same clash
 
 <div class="mt-6 text-xl">Green build. <span class="accent">Red production.</span></div>
 
@@ -102,9 +109,9 @@ mvn dependency:build-classpath # order
 
 <div class="card">
   <div class="card-title">Safety net: <code>maven-enforcer-plugin</code></div>
-  <div class="card-sub mb-4">Make the <b>build</b> fail instead of production</div>
+  <div class="card-sub mb-4">Make the <b>build</b> fail, not production</div>
   <div class="mono text-sm accent">requireUpperBoundDeps</div>
-  <div class="text-sm muted mb-3">Fails if Maven picked a version <b>lower</b> than someone requires</div>
+  <div class="text-sm muted mb-3">Fails if Maven picked a version <b>lower</b> than someone needs</div>
   <div class="mono text-sm accent">dependencyConvergence</div>
   <div class="text-sm muted">Stricter: fails on <b>any</b> version mismatch in the tree</div>
 </div>
@@ -113,8 +120,18 @@ mvn dependency:build-classpath # order
 </div>
 
 <div v-click class="aside">
-The doorman no longer silently picks one Ivanov — he calls the manager: <b>"there are two of them, you decide."</b>
+The doorman stops quietly picking one Ivanov. He calls the manager: <b>"there are two of them, you decide."</b>
 </div>
+
+<!--
+`jakarta.servlet-api` 4.x is the old API under new coordinates. Inside it's still `javax.servlet`. Maven sees two different artifacts and keeps both. Whichever is first on the classpath wins.
+
+Same for `commons-logging` and `jcl-over-slf4j`. Both contain `org.apache.commons.logging`.
+
+Shading is fine when packages are relocated (`org.foo` → `shaded.org.foo`). A fat JAR without relocation is just a second copy in a fake moustache.
+
+Neither enforcer rule catches the different-coordinates case. For that, use `banDuplicateClasses` from extra-enforcer-rules.
+-->
 
 ---
 
@@ -138,8 +155,8 @@ The doorman no longer silently picks one Ivanov — he calls the manager: <b>"th
 
 <div class="grid grid-cols-3 gap-8 mt-14">
   <div><div class="accent mono text-sm mb-1">Class</div>A blueprint. <b>One per class loader</b></div>
-  <div><div class="accent mono text-sm mb-1">Object</div>A house built from it. As many as you like</div>
-  <div><div class="accent mono text-sm mb-1">Loader</div>Delivers the blueprint. Construction isn't its job</div>
+  <div><div class="accent mono text-sm mb-1">Object</div>A house built from it. Build as many as you like</div>
+  <div><div class="accent mono text-sm mb-1">Loader</div>Delivers the blueprint. Doesn't build anything</div>
 </div>
 
 </v-clicks>
@@ -163,8 +180,8 @@ The doorman no longer silently picks one Ivanov — he calls the manager: <b>"th
   <div class="tag hot mb-3">02 · Linking</div>
   <div class="text-sm leading-7">
     <b>Verify</b> <span class="muted">— bytecode is valid and doesn't lie</span><br>
-    <b>Prepare</b> <span class="muted">— memory for <code>static</code> fields, zeroed</span><br>
-    <b>Resolve</b> <span class="muted">— symbolic refs → real ones, often lazily</span>
+    <b>Prepare</b> <span class="muted">— space for <code>static</code> fields, set to zero</span><br>
+    <b>Resolve</b> <span class="muted">— names → real addresses, often lazily</span>
   </div>
 </div>
 
@@ -187,11 +204,11 @@ The doorman no longer silently picks one Ivanov — he calls the manager: <b>"th
 <div class="grid grid-cols-[1.35fr_1fr] gap-8">
 <div>
 
-<div class="muted text-sm mb-1">Loads <b>and</b> initializes — any one is enough</div>
+<div class="muted text-sm mb-1">Loads <b>and</b> initializes — one is enough</div>
 
 ```java
 new Foo();                         // instance
-Foo.helper();                      // or Foo.COUNT
+Foo.helper();                      // static method or non-constant field
 Class.forName("com.example.Foo");  // reflection
 ```
 
@@ -201,6 +218,7 @@ Class.forName("com.example.Foo");  // reflection
 ```java
 Foo f = null;            // nothing happens
 Class<?> c = Foo.class;  // loaded, no static {}
+int n = Foo.COUNT;       // constant: copied in, Foo not loaded
 ```
 
 </div>
@@ -209,21 +227,27 @@ Class<?> c = Foo.class;  // loaded, no static {}
 
 <div class="card hot">
   <div class="card-title">Consequence</div>
-  <div class="text-sm mt-2"><code>NoClassDefFoundError</code> can hit <b>an hour after startup</b> — in a code path nobody visited before.</div>
+  <div class="text-sm mt-2"><code>NoClassDefFoundError</code> can hit <b>an hour after startup</b> — in a code path nobody visited. Not even QA.</div>
 </div>
 
 ```bash
 java -Xlog:class+load=info -jar app.jar
 ```
 
-<div class="text-sm muted">What was loaded, when, and <b>from where</b></div>
+<div class="text-sm muted">What got loaded, when, and <b>from where</b></div>
 
 </div>
 </div>
 
 <div class="aside">
-A door opens with a key <b>or</b> a code <b>or</b> a call to the concierge — you don't need all three.
+The concierge opens the door for a key <b>or</b> a code <b>or</b> a phone call — one is enough. Walking past the building isn't.
 </div>
+
+<!--
+The constant gotcha: if `COUNT` is a compile-time constant (a `static final` primitive or `String` with a constant value), javac copies the value into the caller. `Foo` is not loaded at all.
+
+Bonus: change `COUNT`, recompile only `Foo`, and the caller keeps the old value. Fun at deploy time.
+-->
 
 ---
 
@@ -241,7 +265,7 @@ A door opens with a key <b>or</b> a code <b>or</b> a call to the concierge — y
   <div class="text-center faint mono text-xs">▲ parent</div>
   <div class="card">
     <div class="flex justify-between"><span class="card-title">Platform</span><span class="tag">extra JDK</span></div>
-    <div class="card-sub mono mt-1">java.sql · java.xml · java.net.http</div>
+    <div class="card-sub mono mt-1">java.sql · java.compiler · java.net.http</div>
   </div>
   <div class="text-center faint mono text-xs">▲ parent</div>
   <div class="card hot">
@@ -252,16 +276,20 @@ A door opens with a key <b>or</b> a code <b>or</b> a call to the concierge — y
 
 <div>
 
-- Each loader has a **parent** — the one above
-- Higher = more fundamental, more trusted
-- Your classes live on the bottom floor
+- Each loader has a **parent** — the floor above
+- Higher = more basic, more trusted
+- Your classes live on the ground floor
 
 </div>
 </div>
 
 <div v-click class="aside">
-Top floor — the constitution. Middle — national laws. Bottom — your company's rules.
+Top floor — the owner. Middle — the management company. Ground floor — you, next to the bins.
 </div>
+
+<!--
+Most core modules, `java.xml` included, live on the top floor (Bootstrap). Platform gets the "extra" ones like `java.sql` and `java.compiler`.
+-->
 
 ---
 
@@ -286,15 +314,21 @@ protected Class<?> loadClass(String name) {
 
 <div>
 
-- Only **one** `java.lang.String` — nobody can replace it
+- Only **one** `java.lang.String` — nobody can swap it
 - One loader → **one version** of each class
 
 </div>
 </div>
 
 <div class="aside">
-An intern asks the boss first — and answers himself only if the boss doesn't know.
+The intern asks the boss first. He answers himself only if the boss has no idea.
 </div>
+
+<!--
+This code is simplified. Since JDK 9 the built-in loaders delegate by module first: they check which module owns the package and go straight to that module's loader.
+
+Also, Platform's `getParent()` returns `null`. Bootstrap is native code, not a Java object. So "ask the top floor" is a native call, not `getParent().loadClass()`.
+-->
 
 ---
 layout: statement
@@ -308,14 +342,14 @@ layout: statement
 
 <div class="mt-10 text-lg muted leading-9">
 Whoever called <code>defineClass()</code> is the <b>defining loader</b> — forever<br>
-Identical bytes from two loaders → <b>two different classes</b><br>
-<code>instanceof</code>, casts, <code>==</code> on <code>Class</code> — all take the loader into account
+Same bytes, two loaders → <b>two different classes</b><br>
+<code>instanceof</code>, casts, <code>==</code> on <code>Class</code> — all check the loader
 </div>
 
 </v-clicks>
 
 <!--
-Analogy: twins with different passports. They look the same, but border control won't let one through on the other's.
+Analogy: twins with different passports. Same face, but border control won't let one travel on the other's passport.
 -->
 
 ---
@@ -329,13 +363,13 @@ Analogy: twins with different passports. They look the same, but border control 
   <div class="pl-4">class <b>com.example.Foo</b> cannot be cast to class <b>com.example.Foo</b></div>
   <div v-click class="pl-4 muted">
     (com.example.Foo is in unnamed module of loader <span class="accent font-600">'app'</span>;<br>
-    &nbsp;com.example.Foo is in unnamed module of loader <span class="alt font-600">PluginLoader @6d06d69c</span>)
+    &nbsp;com.example.Foo is in unnamed module of loader <span class="alt font-600">com.example.PluginLoader @6d06d69c</span>)
   </div>
 </div>
 
 <div v-click class="mt-10 text-xl">
 The JVM is being honest: these are <span class="accent">different classes</span>.<br>
-<span class="muted">We just never read to the end.</span>
+<span class="muted">We just never read past the first line.</span>
 </div>
 
 ---
@@ -352,8 +386,8 @@ The JVM is being honest: these are <span class="accent">different classes</span>
 
 <v-clicks>
 
-- The application loads third-party JARs **at runtime**
-- Maven is **powerless** here: it resolves conflicts by picking a single version
+- The app loads third-party JARs **at runtime**
+- Maven can't help: it picks **one** version
 
 </v-clicks>
 
@@ -391,6 +425,7 @@ class PluginClassLoader extends URLClassLoader {
                 try { c = findClass(name); }                   // 3. own JARs first
                 catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
             }
+            if (resolve) resolveClass(c);
             return c;
         }
     }
@@ -404,7 +439,9 @@ h1 { margin-bottom: 1rem; }
 </style>
 
 <!--
-Each plugin gets its own loader with its own JARs. Look locally first, then ask the parent.
+Each plugin gets its own loader with its own JARs. Look at home first, then ask the parent.
+
+Shared packages skip the "home first" step. In two slides you'll see why that's not optional.
 
 Isolation achieved! But…
 -->
@@ -435,9 +472,15 @@ Plugin p = (Plugin) pluginClass.getDeclaredConstructor().newInstance();
 
 <div v-click class="mt-8">
 
-**Takeaway:** shared contracts must be loaded <span class="accent">parent-first</span> <span class="muted">— the host↔plugin API, logging, metrics, anything crossing the boundary, and `java.*` (the JVM won't let you replace those anyway)</span>
+**Takeaway:** shared contracts load <span class="accent">parent-first</span> <span class="muted">— the host↔plugin API and anything that crosses the boundary</span>
 
 </div>
+
+<!--
+The twins again: the host has its own `Plugin`, and the plugin loader made a second one from the plugin JAR. Same face, different passport.
+
+Parent-first means: the host↔plugin API, logging, metrics, anything both sides touch. And `java.*`, because the JVM won't let you define those anyway ("Prohibited package name").
+-->
 
 ---
 
@@ -448,7 +491,7 @@ Plugin p = (Plugin) pluginClass.getDeclaredConstructor().newInstance();
 <div class="grid grid-cols-2 gap-6 mt-6">
   <div class="card hot">
     <div class="tag hot mb-3">parent-first</div>
-    <div class="mono text-sm leading-7">java.*<br>javax.*<br>com.example.plugin.api.*<br>org.slf4j.*<br><span class="muted">&lt;metrics library&gt;</span></div>
+    <div class="mono text-sm leading-7">java.*<br>javax.crypto.*<br>javax.net.*<br>javax.xml.*<br>com.example.plugin.api.*<br>org.slf4j.*<br><span class="muted">&lt;metrics library&gt;</span></div>
   </div>
   <div class="card cool">
     <div class="tag mb-3" style="color:var(--noir-alt);border-color:var(--noir-alt)">child-first</div>
@@ -458,12 +501,20 @@ Plugin p = (Plugin) pluginClass.getDeclaredConstructor().newInstance();
 
 <div v-click class="grid grid-cols-2 gap-6 mt-8 text-base">
   <div><span class="accent">Less shared</span> → stronger isolation</div>
-  <div><span class="alt">More shared</span> → fewer duplicates, fewer boundary problems</div>
+  <div><span class="alt">More shared</span> → fewer duplicates, fewer border problems</div>
 </div>
 
 <div v-click class="aside">
-It's a <b>deliberate trade-off</b>, not a default setting.
+<code>javax.*</code> looks like a JDK passport. Half of them are fakes — your plugin's own <code>javax.inject</code> gets a <code>ClassNotFoundException</code>.
 </div>
+
+<!--
+This is a deliberate trade-off, not a default setting.
+
+Why `javax.*` as a whole is a trap: in our loader, a shared name goes only to the parent, with no fallback. `javax.inject`, `javax.servlet` and `javax.annotation` are normal libraries. The plugin ships one, the host doesn't, and you get `ClassNotFoundException`.
+
+Careful with `javax.xml.*` too: `javax.xml.bind` (JAXB) and `javax.xml.ws` left the JDK in 11. If plugins bring their own JAXB, keep those child-first.
+-->
 
 ---
 
@@ -477,9 +528,9 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 
 <v-clicks>
 
-- Always pass the loader **explicitly** — otherwise the thread's context class loader is used
-- Resources and classes are **separate concerns**: the interface may come from the parent, while `META-INF/services/*` files merge from both levels
-- Some SPIs hate multiple providers (logger bindings!) → **parent only**
+- Pass the loader **explicitly** — or you get the thread's context loader
+- Classes and resources are **separate**: the interface comes from the parent, `META-INF/services/*` files from both levels
+- Some SPIs hate two providers (hello, logger bindings) → **parent only**
 
 </v-clicks>
 
@@ -493,22 +544,22 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 
 <div v-click class="card">
   <div class="card-title mono text-sm accent">NoClassDefFoundError</div>
-  <div class="text-sm mt-2 muted">The class <b>existed</b> at compile time but wasn't found — or failed to initialize — at runtime</div>
+  <div class="text-sm mt-2 muted">The class was there at compile time. At runtime it's <b>missing</b> — or its <code>static {}</code> blew up</div>
 </div>
 
 <div v-click class="card">
   <div class="card-title mono text-sm accent">LinkageError: loader constraint violation</div>
-  <div class="text-sm mt-2 muted">Two loaders agreed they see the same type — it turned out different</div>
+  <div class="text-sm mt-2 muted">Two loaders promised to see the same type. Each brought its own</div>
 </div>
 
 <div v-click class="card">
   <div class="card-title text-sm accent">Generic type erasure</div>
-  <div class="text-sm mt-2 muted">Can <b>hide</b> a conflict: no type in bytecode → no check</div>
+  <div class="text-sm mt-2 muted">Can <b>hide</b> a conflict: no type in bytecode → no check. Until someone calls <code>get()</code></div>
 </div>
 
 <div v-click class="card">
   <div class="card-title text-sm accent">Loader leak</div>
-  <div class="text-sm mt-2 muted">One surviving plugin object, static ref, ThreadLocal or thread — and the <b>whole loader</b> with all its classes stays in memory</div>
+  <div class="text-sm mt-2 muted">One live plugin object, static ref, ThreadLocal or thread — and the <b>whole loader</b> stays in memory, with every class it loaded</div>
 </div>
 
 </div>
@@ -524,11 +575,19 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 1. **Thin API module** — minimum classes on the boundary
 2. **Explicit whitelist** of parent-first packages
 3. **Explicit loader** in `ServiceLoader.load(...)` and `Class.forName(...)`
-4. **Don't pass child-first dependency classes** across the boundary
-5. **Clean up on unload** — threads, ThreadLocals, static caches
-6. **Test isolation** — two plugins, two versions of the same library
+4. **Switch the TCCL** when calling a plugin, restore it in `finally`
+5. **Don't pass child-first classes** across the boundary
+6. **Clean up on unload** — threads, ThreadLocals, static caches
+7. **`close()` the plugin's `URLClassLoader`** — or JAR files stay open
+8. **Test isolation** — two plugins, two versions of one library
 
 </v-clicks>
+
+<!--
+TCCL = thread context class loader. Jackson modules, JAXB and many SPIs look up classes via `Thread.currentThread().getContextClassLoader()`. Set it to the plugin loader before the call and restore it in `finally`. Otherwise the plugin's code goes looking for its classes in the host's flat.
+
+`close()`: a `URLClassLoader` keeps its JAR files open. Forget it, and on Windows you can't even delete the old plugin JAR.
+-->
 
 ---
 
@@ -551,7 +610,7 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 </div>
 
 <div class="aside">
-The further right — the fewer conflicts, and the higher the price in complexity.
+The further right — the fewer conflicts, and the bigger the bill in complexity.
 </div>
 
 ---
@@ -562,16 +621,16 @@ The further right — the fewer conflicts, and the higher the price in complexit
 
 <div class="mt-2 text-[0.95rem]">
 <div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
-  <b>Shading</b><span class="accent">rename one twin</span><span class="muted">Packages rewritten at build time. Breaks on reflection and class names in strings</span>
+  <b>Shading</b><span class="accent">rename one twin</span><span class="muted">Packages renamed at build time. Breaks on reflection and class names in strings</span>
 </div>
 <div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
-  <b>JPMS</b><span class="accent">apartments with locks</span><span class="muted">Strong encapsulation, one version per module. Multiple only via <code>ModuleLayer</code> — a custom loader in disguise</span>
+  <b>JPMS</b><span class="accent">apartments with locks</span><span class="muted">Strong walls, one version per module. Several versions only via <code>ModuleLayer</code> — a custom loader in disguise</span>
 </div>
 <div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
   <b>Custom loader</b><span class="accent">your own building manager</span><span class="muted">Full control, plugins at runtime — and every trap is yours</span>
 </div>
 <div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
-  <b>OSGi</b><span class="accent">bureaucratic housing office</span><span class="muted">Every tenant has a contract with versions. Powerful, battle-tested, heavy</span>
+  <b>OSGi</b><span class="accent">bureaucratic housing office</span><span class="muted">Every tenant signs a contract with versions. Powerful, battle-tested, heavy</span>
 </div>
 <div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3">
   <b>Separate process</b><span class="accent">separate houses</span><span class="muted">Total isolation — but borrowing sugar means crossing the street: network, serialization, memory</span>
@@ -590,11 +649,11 @@ Tomcat, Jenkins, Elasticsearch, IntelliJ plugins — custom loaders. Eclipse —
 
 <v-clicks>
 
-1. Maven picks **one** version — by proximity, not recency
-2. A loader delivers the **blueprint**; objects are separate
-3. Everything is **lazy** → errors are delayed
+1. Maven picks **one** version — nearest, not newest
+2. A loader delivers the **blueprint**; objects come later
+3. Everything is **lazy** → errors show up late
 4. **Class = name + class loader**
-5. Isolation = child-first + **deliberately chosen** shared contracts
+5. Isolation = child-first + **carefully chosen** shared contracts
 
 </v-clicks>
 
