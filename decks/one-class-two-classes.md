@@ -64,7 +64,7 @@ my-app
 
 1. **Nearest wins** — closest to the root, *not* the newest
 2. **Same depth?** First declared wins
-3. **Direct dependency** always wins — it's the nearest (depth 1)
+3. **Direct dependency** wins — it's depth 1
 4. **`dependencyManagement` / BOM** — version forced from above
 5. **`exclusions`** — cut a branch by hand
 
@@ -92,10 +92,8 @@ Rule 3 is not a separate rule. A direct dependency sits at depth 1, so "nearest 
 <div>
 
 - lib-C built for 2.17, got 2.15 → `NoSuchMethodError` **at runtime**
-- Same packages, different coordinates → Maven ships **both**
-  - `javax.servlet:servlet-api` vs `jakarta.servlet-api` 4.x
-  - `commons-logging` vs `jcl-over-slf4j`
-- Shaded copy **without relocation** → same clash
+- Same packages, new coordinates → Maven ships **both**
+- Shaded **without relocation** → same clash
 
 <div class="mt-6 text-xl">Green build. <span class="accent">Red production.</span></div>
 
@@ -120,10 +118,12 @@ mvn dependency:build-classpath # order
 </div>
 
 <div v-click class="aside">
-The doorman stops quietly picking one Ivanov. He calls the manager: <b>"there are two of them, you decide."</b>
+The doorman calls the manager: <b>"two Ivanovs — you decide."</b>
 </div>
 
 <!--
+Examples of "same packages, new coordinates": `javax.servlet:servlet-api` vs `jakarta.servlet-api` 4.x, and `commons-logging` vs `jcl-over-slf4j`.
+
 `jakarta.servlet-api` 4.x is the old API under new coordinates. Inside it's still `javax.servlet`. Maven sees two different artifacts and keeps both. Whichever is first on the classpath wins.
 
 Same for `commons-logging` and `jcl-over-slf4j`. Both contain `org.apache.commons.logging`.
@@ -208,7 +208,7 @@ Neither enforcer rule catches the different-coordinates case. For that, use `ban
 
 ```java
 new Foo();                         // instance
-Foo.helper();                      // static method or non-constant field
+Foo.helper();                      // static call
 Class.forName("com.example.Foo");  // reflection
 ```
 
@@ -218,7 +218,7 @@ Class.forName("com.example.Foo");  // reflection
 ```java
 Foo f = null;            // nothing happens
 Class<?> c = Foo.class;  // loaded, no static {}
-int n = Foo.COUNT;       // constant: copied in, Foo not loaded
+int n = Foo.COUNT;       // inlined, Foo not loaded
 ```
 
 </div>
@@ -244,6 +244,8 @@ The concierge opens the door for a key <b>or</b> a code <b>or</b> a phone call �
 </div>
 
 <!--
+Reading a non-constant static field also triggers loading, same as `Foo.helper()`.
+
 The constant gotcha: if `COUNT` is a compile-time constant (a `static final` primitive or `String` with a constant value), javac copies the value into the caller. `Foo` is not loaded at all.
 
 Bonus: change `COUNT`, recompile only `Foo`, and the caller keeps the old value. Fun at deploy time.
@@ -491,7 +493,7 @@ Parent-first means: the host↔plugin API, logging, metrics, anything both sides
 <div class="grid grid-cols-2 gap-6 mt-6">
   <div class="card hot">
     <div class="tag hot mb-3">parent-first</div>
-    <div class="mono text-sm leading-7">java.*<br>javax.crypto.*<br>javax.net.*<br>javax.xml.*<br>com.example.plugin.api.*<br>org.slf4j.*<br><span class="muted">&lt;metrics library&gt;</span></div>
+    <div class="mono text-sm leading-7">java.*<br>javax.{crypto,net,xml}.*<br>com.example.plugin.api.*<br>org.slf4j.*<br><span class="muted">&lt;metrics library&gt;</span></div>
   </div>
   <div class="card cool">
     <div class="tag mb-3" style="color:var(--noir-alt);border-color:var(--noir-alt)">child-first</div>
@@ -505,7 +507,7 @@ Parent-first means: the host↔plugin API, logging, metrics, anything both sides
 </div>
 
 <div v-click class="aside">
-<code>javax.*</code> looks like a JDK passport. Half of them are fakes — your plugin's own <code>javax.inject</code> gets a <code>ClassNotFoundException</code>.
+<code>javax.*</code> looks like a JDK passport. Half are fake — hello, <code>javax.inject</code>.
 </div>
 
 <!--
@@ -559,7 +561,7 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 
 <div v-click class="card">
   <div class="card-title text-sm accent">Loader leak</div>
-  <div class="text-sm mt-2 muted">One live plugin object, static ref, ThreadLocal or thread — and the <b>whole loader</b> stays in memory, with every class it loaded</div>
+  <div class="text-sm mt-2 muted">One live plugin object, static ref, ThreadLocal or thread — and the <b>whole loader</b> stays in memory</div>
 </div>
 
 </div>
@@ -572,14 +574,14 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 
 <v-clicks>
 
-1. **Thin API module** — minimum classes on the boundary
+1. **Thin API module** — few classes on the boundary
 2. **Explicit whitelist** of parent-first packages
-3. **Explicit loader** in `ServiceLoader.load(...)` and `Class.forName(...)`
-4. **Switch the TCCL** when calling a plugin, restore it in `finally`
+3. **Explicit loader** in `ServiceLoader` and `Class.forName`
+4. **Switch TCCL** into the plugin, restore in `finally`
 5. **Don't pass child-first classes** across the boundary
-6. **Clean up on unload** — threads, ThreadLocals, static caches
-7. **`close()` the plugin's `URLClassLoader`** — or JAR files stay open
-8. **Test isolation** — two plugins, two versions of one library
+6. **Clean up on unload** — threads, ThreadLocals, caches
+7. **`close()` the `URLClassLoader`** — frees JAR files
+8. **Test isolation** — two plugins, two versions
 
 </v-clicks>
 

@@ -198,12 +198,20 @@ html.dark {
 
 /* ---------- small building blocks ---------- */
 
-/* bottom-of-slide one-liner: analogy, takeaway */
+/* column so .aside can sit at the bottom without overlapping content */
+.slidev-layout.default {
+  display: flex;
+  flex-direction: column;
+}
+
+/* no shrinking: a squeezed code block would scroll instead of showing */
+.slidev-layout.default > * {
+  flex-shrink: 0;
+}
+
+/* bottom-of-slide one-liner: analogy, takeaway; margin-top:auto pushes it down */
 .aside {
-  position: absolute;
-  left: 4rem;
-  right: 4rem;
-  bottom: 2.6rem;
+  margin-top: auto;
   font-size: 0.95rem;
   color: var(--noir-muted);
   padding-left: 1rem;
