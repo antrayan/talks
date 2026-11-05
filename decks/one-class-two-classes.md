@@ -54,6 +54,10 @@ my-app
 </div>
 </div>
 
+<!--
+One classpath = the input of one loader (App). Plugin loaders get their own JAR lists, and Maven knows nothing about them. That's Part 3.
+-->
+
 ---
 
 ###### Part 1 · Maven
@@ -92,8 +96,8 @@ Rule 3 is not a separate rule. A direct dependency sits at depth 1, so "nearest 
 <div>
 
 - lib-C built for 2.17, got 2.15 → `NoSuchMethodError` **at runtime**
-- Same packages, new coordinates → Maven ships **both**
-- Shaded **without relocation** → same clash
+- Two artifacts, same classes inside → Maven keeps **both**
+- A JAR with a hidden **copy** of Guava → two Guavas
 
 <div class="mt-6 text-xl">Green build. <span class="accent">Red production.</span></div>
 
@@ -122,11 +126,15 @@ The doorman calls the manager: <b>"two Ivanovs — you decide."</b>
 </div>
 
 <!--
-Examples of "same packages, new coordinates": `javax.servlet:servlet-api` vs `jakarta.servlet-api` 4.x, and `commons-logging` vs `jcl-over-slf4j`.
+Bullet 2: Maven compares coordinates (groupId:artifactId), not the classes inside. Different coordinates = different libraries = no conflict, so both go on the classpath. The JVM then sees the same class twice and takes the first one.
+
+Examples: `javax.servlet:servlet-api` vs `jakarta.servlet-api` 4.x, and `commons-logging` vs `jcl-over-slf4j`.
 
 `jakarta.servlet-api` 4.x is the old API under new coordinates. Inside it's still `javax.servlet`. Maven sees two different artifacts and keeps both. Whichever is first on the classpath wins.
 
 Same for `commons-logging` and `jcl-over-slf4j`. Both contain `org.apache.commons.logging`.
+
+Bullet 3: some libraries ship as a fat JAR with another library copied inside (shading). If the packages were not renamed (no relocation), you get `com.google.common.*` from the fat JAR and from real Guava. Maven sees only one Guava, the JVM sees two.
 
 Shading is fine when packages are relocated (`org.foo` → `shaded.org.foo`). A fat JAR without relocation is just a second copy in a fake moustache.
 
@@ -204,7 +212,7 @@ Neither enforcer rule catches the different-coordinates case. For that, use `ban
 <div class="grid grid-cols-[1.35fr_1fr] gap-8">
 <div>
 
-<div class="muted text-sm mb-1">Loads <b>and</b> initializes — one is enough</div>
+<div class="muted text-sm mb-1">Any <b>one</b> of these loads and initializes <code>Foo</code></div>
 
 ```java
 new Foo();                         // instance
@@ -213,7 +221,7 @@ Class.forName("com.example.Foo");  // reflection
 ```
 
 <div v-click>
-<div class="muted text-sm mb-1 mt-6">Just mentioning the type — not enough</div>
+<div class="muted text-sm mb-1 mt-6">These do <b>not</b> initialize <code>Foo</code></div>
 
 ```java
 Foo f = null;            // nothing happens
@@ -316,8 +324,9 @@ protected Class<?> loadClass(String name) {
 
 <div>
 
+- **The default** — every `URLClassLoader` works like this
 - Only **one** `java.lang.String` — nobody can swap it
-- One loader → **one version** of each class
+- Parent always wins → **its version** always wins
 
 </div>
 </div>
@@ -343,7 +352,7 @@ layout: statement
 <v-clicks>
 
 <div class="mt-10 text-lg muted leading-9">
-Whoever called <code>defineClass()</code> is the <b>defining loader</b> — forever<br>
+The loader that called <code>defineClass()</code> <b>owns</b> the class for life<br>
 Same bytes, two loaders → <b>two different classes</b><br>
 <code>instanceof</code>, casts, <code>==</code> on <code>Class</code> — all check the loader
 </div>
@@ -351,6 +360,8 @@ Same bytes, two loaders → <b>two different classes</b><br>
 </v-clicks>
 
 <!--
+"Owns for life": a class can't move to another loader. It is unloaded only together with its loader, when nothing references either of them.
+
 Analogy: twins with different passports. Same face, but border control won't let one travel on the other's passport.
 -->
 
@@ -378,30 +389,66 @@ The JVM is being honest: these are <span class="accent">different classes</span>
 
 ###### Part 3 · Plugins
 
-# The task: a plugin system
+# The task: plug into a big host
 
-<div class="grid grid-cols-3 gap-4 mt-8 mb-8">
-  <div class="card"><div class="card-title">Host</div><div class="card-sub mono">jackson 2.16</div></div>
-  <div class="card cool"><div class="card-title">Plugin A</div><div class="card-sub mono">jackson 2.15</div></div>
-  <div class="card hot"><div class="card-title">Plugin B</div><div class="card-sub mono">jackson 2.17</div></div>
+<div class="grid grid-cols-2 gap-6 mt-8 mb-8">
+  <div class="card"><div class="card-title">Host</div><div class="card-sub mono">jackson 2.16 · mysql 8.0</div></div>
+  <div class="card cool"><div class="card-title">Plugin</div><div class="card-sub mono">jackson 2.17 · mysql 8.4</div></div>
 </div>
 
 <v-clicks>
 
-- The app loads third-party JARs **at runtime**
-- Maven can't help: it picks **one** version
+- The host loads the plugin JAR **at runtime**
+- Maven can't help: it never saw the plugin
 
 </v-clicks>
 
 <div v-click class="mt-10 text-xl">
-<span class="accent">Goal:</span> each plugin gets its own versions of its dependencies
+<span class="accent">Goal:</span> the plugin runs on <b>its own</b> libraries
 </div>
+
+<div v-click class="aside">
+A game disc brings its own drivers. The OS says: <b>"no thanks, use mine."</b>
+</div>
+
+<!--
+The host is a big system with its own libraries. We don't control them, and we don't want every plugin author to match our versions.
+-->
 
 ---
 
 ###### Part 3 · Plugins
 
-# Solution: a child-first loader
+# Attempt 1: just a URLClassLoader
+
+```java
+var loader = new URLClassLoader(pluginJars, hostLoader);
+var cls = loader.loadClass("com.acme.MyPlugin");
+Plugin p = (Plugin) cls.getDeclaredConstructor().newInstance();
+p.run();   // plugin calls a jackson 2.17 method
+```
+
+<div v-click class="flow mt-6">
+  <div class="card"><div class="card-sub">plugin loader</div><div class="card-title">asks parent first</div></div>
+  <div class="arrow">→</div>
+  <div class="card hot"><div class="card-sub">host loader</div><div class="card-title">has jackson 2.16</div></div>
+  <div class="arrow">→</div>
+  <div class="card"><div class="card-sub">plugin code</div><div class="card-title mono">NoSuchMethodError</div></div>
+</div>
+
+<div v-click class="mt-8 text-xl">
+Default delegation = <span class="accent">the host always wins</span>
+</div>
+
+<!--
+This is the parent-first default from Part 2. The URLClassLoader asks the host first. The host has jackson 2.16, so the plugin never sees its own 2.17. The jackson inside the plugin JAR is dead weight.
+-->
+
+---
+
+###### Part 3 · Plugins
+
+# Attempt 2: a child-first loader
 
 ````md magic-move {lines: false}
 ```java
@@ -409,8 +456,8 @@ class PluginClassLoader extends URLClassLoader {
     @Override
     protected Class<?> loadClass(String name, boolean resolve) {
         // 1. cache
-        // 2. shared package → parent
-        // 3. otherwise → own JARs first, then parent
+        // 2. own JARs first
+        // 3. not found → parent
     }
 }
 ```
@@ -419,17 +466,13 @@ class PluginClassLoader extends URLClassLoader {
 class PluginClassLoader extends URLClassLoader {
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        synchronized (getClassLoadingLock(name)) {
-            Class<?> c = findLoadedClass(name);                // 1. cache
-            if (c == null && isShared(name))
-                c = getParent().loadClass(name);               // 2. shared → parent
-            if (c == null) {
-                try { c = findClass(name); }                   // 3. own JARs first
-                catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
-            }
-            if (resolve) resolveClass(c);
-            return c;
+        Class<?> c = findLoadedClass(name);                // 1. cache
+        if (c == null) {
+            try { c = findClass(name); }                   // 2. own JARs first
+            catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
         }
+        if (resolve) resolveClass(c);
+        return c;
     }
 }
 ```
@@ -441,9 +484,9 @@ h1 { margin-bottom: 1rem; }
 </style>
 
 <!--
-Each plugin gets its own loader with its own JARs. Look at home first, then ask the parent.
+Flip the order: look at home first, ask the parent only if not found. Now the plugin gets its own jackson 2.17.
 
-Shared packages skip the "home first" step. In two slides you'll see why that's not optional.
+Real code wraps the body in `synchronized (getClassLoadingLock(name))`. Skipped here to fit the slide.
 
 Isolation achieved! But…
 -->
@@ -461,7 +504,9 @@ layout: statement
 # …and then everything explodes
 
 ```java
-Plugin p = (Plugin) pluginClass.getDeclaredConstructor().newInstance();
+var loader = new PluginClassLoader(pluginJars, hostLoader);
+var cls = loader.loadClass("com.acme.MyPlugin");
+Plugin p = (Plugin) cls.getDeclaredConstructor().newInstance();  // boom
 ```
 
 <div class="mono text-sm mt-2" style="color:#ff6b6b">ClassCastException: Plugin cannot be cast to Plugin</div>
@@ -474,14 +519,70 @@ Plugin p = (Plugin) pluginClass.getDeclaredConstructor().newInstance();
 
 <div v-click class="mt-8">
 
-**Takeaway:** shared contracts load <span class="accent">parent-first</span> <span class="muted">— the host↔plugin API and anything that crosses the boundary</span>
+**Fix:** shared contracts load <span class="accent">parent-first</span> <span class="muted">— the host↔plugin API and anything that crosses the boundary</span>
 
 </div>
 
 <!--
+Why: the plugin is built as a fat JAR, and the plugin API classes are inside it. Child-first finds its own copy of `Plugin` first.
+
 The twins again: the host has its own `Plugin`, and the plugin loader made a second one from the plugin JAR. Same face, different passport.
 
 Parent-first means: the host↔plugin API, logging, metrics, anything both sides touch. And `java.*`, because the JVM won't let you define those anyway ("Prohibited package name").
+-->
+
+---
+
+###### Part 3 · Plugins
+
+# Fix: shared packages go to the parent
+
+````md magic-move {lines: false}
+```java
+class PluginClassLoader extends URLClassLoader {
+    @Override
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        Class<?> c = findLoadedClass(name);                // 1. cache
+        if (c == null) {
+            try { c = findClass(name); }                   // 2. own JARs first
+            catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
+        }
+        if (resolve) resolveClass(c);
+        return c;
+    }
+}
+```
+
+```java
+class PluginClassLoader extends URLClassLoader {
+    static final List<String> SHARED = List.of("java.", "javax.crypto.", "com.example.plugin.api.", "org.slf4j.");
+
+    @Override
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        Class<?> c = findLoadedClass(name);                // 1. cache
+        if (c == null && isShared(name))
+            c = getParent().loadClass(name);               // 2. shared → parent
+        if (c == null) {
+            try { c = findClass(name); }                   // 3. own JARs first
+            catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
+        }
+        if (resolve) resolveClass(c);
+        return c;
+    }
+    boolean isShared(String n) { return SHARED.stream().anyMatch(n::startsWith); }
+}
+```
+````
+
+<style>
+.slidev-code { --slidev-code-font-size: 12px; }
+h1 { margin-bottom: 1rem; }
+</style>
+
+<!--
+Same loader, plus one list. Names from `SHARED` always come from the host. Everything else is still child-first.
+
+Now `Plugin` comes from the host on both sides, so the cast works. Next slide: how to choose that list.
 -->
 
 ---
@@ -522,19 +623,96 @@ Careful with `javax.xml.*` too: `javax.xml.bind` (JAXB) and `javax.xml.ws` left 
 
 ###### Part 3 · Plugins
 
-# ServiceLoader and `META-INF/services`
+# What is SPI?
 
-```java
-ServiceLoader.load(Plugin.class, pluginClassLoader);
-```
+<div class="grid grid-cols-3 gap-4 mt-6">
+
+<div v-click class="card">
+  <div class="tag hot mb-3">01 · Interface</div>
+  <div class="mono text-sm">java.sql.Driver</div>
+  <div class="text-sm muted mt-2">Lives in the JDK. Knows nothing about MySQL</div>
+</div>
+
+<div v-click class="card">
+  <div class="tag hot mb-3">02 · Registration</div>
+  <div class="mono text-sm">META-INF/services/<br>java.sql.Driver</div>
+  <div class="text-sm muted mt-2">A text file in the MySQL JAR: <code>com.mysql.cj.jdbc.Driver</code></div>
+</div>
+
+<div v-click class="card">
+  <div class="tag hot mb-3">03 · Lookup</div>
+  <div class="mono text-sm">ServiceLoader<br>.load(Driver.class)</div>
+  <div class="text-sm muted mt-2">Reads those files through a loader — by default the <b>thread context</b> one</div>
+</div>
+
+</div>
 
 <v-clicks>
 
-- Pass the loader **explicitly** — or you get the thread's context loader
-- Classes and resources are **separate**: the interface comes from the parent, `META-INF/services/*` files from both levels
+- Pass the loader **explicitly**: `ServiceLoader.load(X.class, pluginLoader)`
 - Some SPIs hate two providers (hello, logger bindings) → **parent only**
 
 </v-clicks>
+
+<div v-click class="aside">
+A phone book: the JDK prints the heading "Driver", every JAR writes its own number under it.
+</div>
+
+<!--
+SPI = Service Provider Interface. Someone (the JDK, a framework) defines an interface. Any JAR can ship an implementation, and the caller never names it in code. Examples: JDBC drivers, logging bindings, Jackson modules (`findAndRegisterModules()`), JAXB.
+
+Thread context class loader (TCCL): every thread carries one. By default it's the App loader, i.e. the host. So without an explicit loader, `ServiceLoader` looks in the host, not in the plugin.
+
+Classes and resources are separate: the interface can come from the parent, while `META-INF/services/*` files are found in both the parent and the plugin JARs.
+-->
+
+---
+
+###### Part 3 · Plugins
+
+# Next error: the plugin's MySQL driver
+
+```java
+// inside the plugin
+var conn = DriverManager.getConnection("jdbc:mysql://db/app", user, pass);
+```
+
+<div class="mono text-sm mt-2" style="color:#ff6b6b">SQLException: No suitable driver found for jdbc:mysql://db/app</div>
+
+<div v-click class="flow mt-6">
+  <div class="card"><div class="card-sub">DriverManager</div><div class="card-title">scans drivers once</div></div>
+  <div class="arrow">→</div>
+  <div class="card"><div class="card-sub">through the TCCL</div><div class="card-title">= host loader</div></div>
+  <div class="arrow">→</div>
+  <div class="card hot"><div class="card-sub">plugin's mysql 8.4</div><div class="card-title">never seen</div></div>
+</div>
+
+<div v-click>
+
+```java
+// on start: load the driver through the plugin loader
+Class.forName("com.mysql.cj.jdbc.Driver", true, pluginLoader);  // static {} registers it
+// on unload, from plugin code
+DriverManager.deregisterDriver(pluginDriver);                    // or the loader leaks
+```
+
+</div>
+
+<style>
+.slidev-code { --slidev-code-font-size: 12.5px; }
+</style>
+
+<!--
+Two reasons it fails:
+1. `DriverManager` scans `META-INF/services/java.sql.Driver` once, on first use, through the TCCL. That's the host's loader, so the plugin's driver is never found.
+2. The host's own mysql 8.0 driver is registered. But `getConnection` checks whether the caller's loader sees the same driver class. The plugin loader loads its own copy of `com.mysql.cj.jdbc.Driver` (child-first, twins again), so the host driver is skipped.
+
+Fix: load the driver through the plugin loader. Its `static {}` calls `DriverManager.registerDriver`. Or skip `DriverManager` and create the driver's `DataSource` directly.
+
+Switching the TCCL helps only if `DriverManager` hasn't scanned yet, and in a running host it usually has.
+
+On unload: call `deregisterDriver` from plugin code. `DriverManager` is a JDK class that lives forever. If it holds the plugin's driver, the whole plugin loader leaks.
+-->
 
 ---
 
@@ -576,7 +754,7 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 
 1. **Thin API module** — few classes on the boundary
 2. **Explicit whitelist** of parent-first packages
-3. **Explicit loader** in `ServiceLoader` and `Class.forName`
+3. **Explicit loader** for `ServiceLoader`, `Class.forName`, JDBC
 4. **Switch TCCL** into the plugin, restore in `finally`
 5. **Don't pass child-first classes** across the boundary
 6. **Clean up on unload** — threads, ThreadLocals, caches
@@ -588,7 +766,7 @@ ServiceLoader.load(Plugin.class, pluginClassLoader);
 <!--
 TCCL = thread context class loader. Jackson modules, JAXB and many SPIs look up classes via `Thread.currentThread().getContextClassLoader()`. Set it to the plugin loader before the call and restore it in `finally`. Otherwise the plugin's code goes looking for its classes in the host's flat.
 
-`close()`: a `URLClassLoader` keeps its JAR files open. Forget it, and on Windows you can't even delete the old plugin JAR.
+`close()`: a `URLClassLoader` keeps its JAR files open. Forget it, and on Windows you can't even delete the old plugin JAR. Also deregister the plugin's JDBC drivers, or `DriverManager` keeps the loader alive.
 -->
 
 ---
