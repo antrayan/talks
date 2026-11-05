@@ -1,44 +1,7 @@
 # talks
 
-My personal collection of [Slidev](https://sli.dev) presentations on IT topics.
+Hey! This is where my slides live — talks on whatever IT stuff I find interesting at the moment.
 
-## Add a deck
+👉 **Watch them here: [antrayan.github.io/talks](https://antrayan.github.io/talks/)**
 
-Drop a markdown file into `decks/`. The filename (without `.md`) becomes the URL slug.
-Start it with frontmatter:
-
-```md
----
-title: My Talk
-theme: default
----
-
-# First slide
-```
-
-Want the dark minimal look? Use the local theme: `theme: ./themes/noir`.
-
-## Preview locally
-
-```bash
-npm install
-npm run dev -- decks/<name>.md
-```
-
-## Build locally
-
-```bash
-BASE=/talks/ npm run build
-```
-
-Output goes to `public/`: one folder per deck plus `index.html` listing all decks.
-
-GitHub Pages is a static host, so opening a slide URL directly (e.g. `/talks/git-basics/2`)
-gives a 404; clicking through from the deck root works. Need shareable slide links?
-Add `routerMode: hash` to that deck's frontmatter.
-
-## Deploy
-
-Every push to `main` runs `.github/workflows/pages.yml` and publishes to
-`https://<user>.github.io/talks/`. One-time setup: repo Settings → Pages →
-Source: **GitHub Actions**.
+Built with [Slidev](https://sli.dev), because slides are just markdown with ambitions.
