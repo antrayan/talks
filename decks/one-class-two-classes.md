@@ -30,50 +30,52 @@ Plan: Maven picks the JARs → class loaders pick the classes → plugins, and h
 
 ###### Before we start
 
-# Meet the ministry
+# Welcome to the base
 
-<div class="grid grid-cols-3 gap-4 mt-6 text-sm">
+<div class="grid grid-cols-3 gap-4 mt-4 text-sm">
 
 <div v-click class="card">
-  <div class="tag mb-2">Maven · HR</div>
-  <div>"I approve which CV folders we accept. One per name."</div>
+  <div class="tag mb-2">Maven · the checkpoint</div>
+  <div>"I read the label on each van. One van per label gets through."</div>
 </div>
 
 <div v-click class="card">
-  <div class="tag mb-2">JAR · a CV folder</div>
-  <div>"Full of CVs — that's classes. HR reads my label, never the CVs."</div>
+  <div class="tag mb-2">JAR · a van</div>
+  <div>"I carry job descriptions — <code>.class</code> files. The checkpoint never opens me."</div>
 </div>
 
 <div v-click class="card hot">
-  <div class="tag hot mb-2">ClassLoader · a department</div>
-  <div>"I hire people. But first I always check with upstairs."</div>
+  <div class="tag hot mb-2">ClassLoader · a unit</div>
+  <div>"I put positions on my staff list. But first I report up the chain."</div>
 </div>
 
 <div v-click class="card">
-  <div class="tag mb-2">Class · an employee</div>
-  <div>"My ID is my name <b>plus</b> the department that hired me."</div>
+  <div class="tag mb-2">Class · a position</div>
+  <div>"Driver, company A." My ID is my title <b>plus</b> my unit.</div>
 </div>
 
 <div v-click class="card">
-  <div class="tag mb-2">Object · a stamped document</div>
-  <div>"<code>new Foo()</code> — Foo stamps one more paper."</div>
+  <div class="tag mb-2">Object · a soldier</div>
+  <div>"<code>new Driver()</code> — one more soldier in that position."</div>
 </div>
 
 <div v-click class="card cool">
-  <div class="tag mb-2" style="color:var(--noir-alt);border-color:var(--noir-alt)">Plugin · a contractor crew</div>
-  <div>"Called in on the fly. Own tools. Needs your sockets."</div>
+  <div class="tag mb-2" style="color:var(--noir-alt);border-color:var(--noir-alt)">Plugin · a contractor</div>
+  <div>"Called in on the fly. Own gear. Needs your fuel and radio."</div>
 </div>
 
 </div>
 
 <div v-click class="aside">
-Lost at any point? Ask two questions: <b>which folder?</b> and <b>which department?</b>
+Lost at any point? Ask two questions: <b>which van?</b> and <b>which unit?</b>
 </div>
 
 <!--
-The whole talk is one ministry. Introduce the cast once and keep coming back to it.
+The whole talk is one military base. Introduce the cast once and keep coming back to it.
 
-"Upstairs" always means "the parent loader".
+"Up the chain" always means "the parent loader".
+
+One position, many soldiers: that's one class, many objects.
 -->
 
 ---
@@ -95,11 +97,11 @@ my-app
 
 <div>
 
-- Libraries recommend their own libraries
-- Two candidates: **jackson 2.15 and 2.17**
-- Only **one** gets the job
+- Libraries bring their own libraries
+- Two vans labelled **jackson**: 2.15 and 2.17
+- Only **one** gets through the checkpoint
 
-<div v-click class="mt-8 text-2xl font-600">Who gets hired?</div>
+<div v-click class="mt-8 text-2xl font-600">Which one?</div>
 
 </div>
 </div>
@@ -112,27 +114,27 @@ Let the room guess. Most say "the newest". Wrong — next slide.
 
 ###### Part 1 · Maven
 
-# HR's rules
+# The checkpoint's rules
 
 <v-clicks>
 
-1. **Fewest handshakes wins** — closest to your `pom.xml`. *Not* the youngest
-2. **A tie?** Whoever applied first — declared first
-3. **The staffing plan** — `dependencyManagement` / BOM fixes the version from above
-4. **The blacklist** — `exclusions` reject a candidate
+1. **Closest to the gate wins** — fewest hops from your `pom.xml`. *Not* the newest
+2. **A tie?** First in the queue — declared first
+3. **Orders from above** — `dependencyManagement` / BOM fixes the version
+4. **"Turn it back"** — `exclusions` send a van away
 
 </v-clicks>
 
 <div v-click class="mt-8 text-lg">
-→ Here <span class="accent font-600">2.15</span> gets the job. Two handshakes beat three, even though lib-C wanted 2.17
+→ Here <span class="accent font-600">2.15</span> gets through. Two hops beat three, even though lib-C wanted 2.17
 </div>
 
 <div v-click class="aside">
-"Young, experienced, brilliant — irrelevant. <b>Who recommended you?</b>" — HR
+"New, old, freshly painted — I don't care. <b>Closest to the gate</b> gets through." — the guard
 </div>
 
 <!--
-A direct dependency is the shortest possible chain (depth 1). That's why "just declare it directly" is the most common fix. It's rule 1 in action, not a separate rule.
+A direct dependency is the closest van possible (depth 1). That's why "just declare it directly" is the most common fix. It's rule 1 in action, not a separate rule.
 -->
 
 ---
@@ -148,18 +150,20 @@ A direct dependency is the shortest possible chain (depth 1). That's why "just d
 - It calls a method 2.15 doesn't have
 - → `NoSuchMethodError` **at runtime**
 
-<div class="mt-6 text-xl">Green build. <span class="accent">Red production.</span></div>
+<div class="mt-5 text-xl">Green build. <span class="accent">Red production.</span></div>
 
 ```bash
-mvn dependency:tree -Dverbose  # who got hired, who didn't
-mvn dependency:build-classpath # the approved list
+# who got in, who didn't
+mvn dependency:tree -Dverbose
+# the column of vans
+mvn dependency:build-classpath
 ```
 
 </div>
 <div v-click>
 
 <div class="card">
-  <div class="card-title">Call the auditor: <code>maven-enforcer-plugin</code></div>
+  <div class="card-title">Call the inspector from HQ: <code>maven-enforcer-plugin</code></div>
   <div class="card-sub mb-4">Catch it at build time, not in production</div>
   <div class="mono text-sm accent">requireUpperBoundDeps</div>
   <div class="text-sm muted mb-3">Fails if someone got an <b>older</b> version than they asked for</div>
@@ -171,8 +175,13 @@ mvn dependency:build-classpath # the approved list
 </div>
 
 <div v-click class="aside">
-HR: <b>"Two jacksons applied. Auditor — your call."</b>
+The guard: <b>"Two jacksons at the gate. Inspector — your call."</b>
 </div>
+
+<style>
+.slidev-code { --slidev-code-font-size: 13px; }
+h1 { margin-bottom: 1rem; }
+</style>
 
 <!--
 Maven followed its rules perfectly. lib-C just didn't get the version it was compiled against.
@@ -186,67 +195,71 @@ Both enforcer rules compare versions of the same artifact only. "Different names
 
 ###### Part 1 · Maven
 
-# This week's interview: HR
+# This week's interview: the guard
 
-<div class="flex flex-col gap-4 mt-4 text-base">
-  <div v-click><span class="accent font-600">Q:</span> So you decide which JARs get in?<br><b>HR:</b> I read folder labels — <code>groupId:artifactId</code>. That's all I read.</div>
-  <div v-click><span class="accent font-600">Q:</span> Two folders with the same label?<br><b>HR:</b> One gets approved. Fewest handshakes.</div>
-  <div v-click><span class="accent font-600">Q:</span> Even if the other one is newer?<br><b>HR:</b> I don't do ages.</div>
-  <div v-click><span class="accent font-600">Q:</span> Different labels, but the same people inside?<br><b>HR:</b> Both approved. I don't read CVs. Not my job.</div>
+<div class="flex flex-col gap-3 mt-2 text-base">
+  <div v-click><span class="accent font-600">Q:</span> So you decide which JARs get in?<br><b>Guard:</b> I read the label on the van — <code>groupId:artifactId</code>. That's all I read.</div>
+  <div v-click><span class="accent font-600">Q:</span> Two vans with the same label?<br><b>Guard:</b> One gets through. Closest to the gate.</div>
+  <div v-click><span class="accent font-600">Q:</span> Even if the other one is newer?<br><b>Guard:</b> I don't do ages.</div>
+  <div v-click><span class="accent font-600">Q:</span> Different labels, but the same cargo inside?<br><b>Guard:</b> Both get through. I don't open vans. Not my job.</div>
 </div>
 
-<div v-click class="mt-6 text-xl">
-→ My output: an <b>approved list of folders</b> — the classpath. <span class="muted">Departments, your turn.</span>
+<div v-click class="mt-5 text-xl">
+→ My output: a <b>column of vans</b> — the classpath. <span class="muted">Units, your turn.</span>
 </div>
 
 <div v-click class="aside">
-A folder labelled "Petrov", full of Ivanovs? Different label — approved.
+Van "Potatoes", same cargo as van "Vegetables"? Different labels — drive through.
 </div>
 
+<style>
+h1 { margin-bottom: 1rem; }
+</style>
+
 <!--
-Real "Petrovs full of Ivanovs":
+Real "same cargo, different label":
 - `javax.servlet:servlet-api` vs `jakarta.servlet:jakarta.servlet-api` 4.x. New label, still `javax.servlet` inside.
 - `commons-logging` vs `jcl-over-slf4j`. Both contain `org.apache.commons.logging`.
 - A fat JAR with Guava copied inside, packages not renamed. Maven sees one Guava, the JVM sees two.
 
-The list order: Maven 3 reads the tree like a book — lib-A, everything under lib-A, then lib-B. So a dependency of lib-A can stand before your own lib-B. Maven 4 orders by depth: all direct dependencies first. Upgrading Maven can change which duplicate class wins. Check with `mvn dependency:build-classpath`.
+The column order: Maven 3 reads the tree like a book — lib-A, everything under lib-A, then lib-B. So a dependency of lib-A can stand before your own lib-B. Maven 4 orders by depth: all direct dependencies first. Upgrading Maven can change which duplicate class wins. Check with `mvn dependency:build-classpath`.
 -->
 
 ---
 
 ###### Part 2 · ClassLoader
 
-# Three floors, one rule
+# The chain of command
 
 <div class="flex flex-col gap-2 mt-2 mb-6">
   <div v-click="2" class="card py-2">
-    <div class="flex justify-between"><span class="card-title">Bootstrap</span><span class="tag">top floor · the minister</span></div>
-    <div class="text-sm muted mt-1">"<code>String</code>, <code>Object</code>, <code>List</code> — matters of state. <code>Foo</code>? Not my package."</div>
+    <div class="flex justify-between"><span class="card-title">Bootstrap</span><span class="tag">General Staff</span></div>
+    <div class="text-sm muted mt-1">"<code>String</code>, <code>Object</code>, <code>List</code> — strategic matters. <code>Foo</code>? Not our package."</div>
   </div>
   <div v-click="2" class="text-center faint mono text-xs">▲ "is Foo yours?"</div>
   <div v-click="1" class="card py-2">
-    <div class="flex justify-between"><span class="card-title">Platform</span><span class="tag">deputy ministers</span></div>
-    <div class="text-sm muted mt-1">"<code>java.sql</code>, <code>java.net.http</code> — mine. But first I check with the minister. <code>Foo</code>? Not my package either."</div>
+    <div class="flex justify-between"><span class="card-title">Platform</span><span class="tag">base command</span></div>
+    <div class="text-sm muted mt-1">"<code>java.sql</code>, <code>java.net.http</code> — ours. But first I report to General Staff. <code>Foo</code>? Not our package either."</div>
   </div>
   <div v-click="1" class="text-center faint mono text-xs">▲ "is Foo yours?"</div>
   <div class="card hot py-2">
-    <div class="flex justify-between"><span class="card-title">App</span><span class="tag hot">your department · you are here</span></div>
-    <div class="text-sm muted mt-1">"I always check upstairs first. Not their package? Then I hire <code>Foo</code> myself — from the first folder that has his CV."</div>
+    <div class="flex justify-between"><span class="card-title">App</span><span class="tag hot">your company · you are here</span></div>
+    <div class="text-sm muted mt-1">"I always report up first. Not their package? I handle it locally: <code>Foo</code>'s job description, from the first van that has it."</div>
   </div>
 </div>
 
 <div v-click="3" class="aside">
-The rule: <b>escalate first</b>. Upstairs says "not my package" — handle it yourself.
+The rule: <b>report up first</b>. Up the chain says "not our package" — handle it locally.
 </div>
 
 <!--
-"Is Foo yours?" always travels up. Higher floor = more basic, more trusted.
+"Is Foo yours?" always travels up. Higher = more basic, more trusted.
 
-"Not my package" is the real mechanism, not a joke: since JDK 9 the built-in loaders keep a map "package → module → loader". They don't keep a list of classes, only places to look. A class is found on demand: the name becomes a path (`com/acme/Foo.class`), and the folders are checked one by one.
+"Not our package" is the real mechanism, not a joke: since JDK 9 the built-in loaders keep a map "package → module → loader". They don't keep a list of classes, only places to look. A class is found on demand: the name becomes a path (`com/acme/Foo.class`), and the vans are checked one by one.
 
-Most core modules, `java.xml` and `java.logging` included, sit with the minister. Deputies get the extras like `java.sql` and `java.compiler`.
+Most core modules, `java.xml` and `java.logging` included, belong to General Staff. Base command gets the extras like `java.sql` and `java.compiler`.
 
-Ten folders with `com.acme.Foo`? The first one wins, the other nine are never opened, and nobody warns you. It's decided per class, so `Foo` can come from folder 1 and `Bar` from folder 2. Catch it at build time with `banDuplicateClasses`.
+Ten vans with `com.acme.Foo`? The first one wins, the other nine are never opened, and nobody warns you. It's decided per class, so `Foo` can come from van 1 and `Bar` from van 2. Catch it at build time with `banDuplicateClasses`.
 -->
 
 ---
@@ -261,9 +274,9 @@ Ten folders with `com.acme.Foo`? The first one wins, the other nine are never op
 protected Class<?> loadClass(String name) {
     Class<?> c = findLoadedClass(name);          // 1. already on staff?
     if (c == null) {
-        try { c = getParent().loadClass(name); } // 2. escalate
+        try { c = getParent().loadClass(name); } // 2. report up
         catch (ClassNotFoundException e) {
-            c = findClass(name);                 // 3. hire myself
+            c = findClass(name);                 // 3. handle it locally
         }
     }
     return c;
@@ -274,7 +287,7 @@ protected Class<?> loadClass(String name) {
 
 - **The default** — every `URLClassLoader` works like this
 - That's why there's exactly **one** `String`
-- Upstairs always wins → **its version** always wins
+- Up the chain always wins → **its version** always wins
 
 </div>
 </div>
@@ -284,33 +297,33 @@ This is App's monologue, as code.
 
 Simplified. Since JDK 9 the built-in loaders first check which module owns the package and go straight to that module's loader.
 
-Platform's `getParent()` returns `null`. Bootstrap is native code, not a Java object, so "ask the minister" is a native call.
+Platform's `getParent()` returns `null`. Bootstrap is native code, not a Java object, so "report to General Staff" is a native call.
 -->
 
 ---
 
 ###### Part 2 · ClassLoader
 
-# Officials are lazy
+# The army is lazy
 
 <div class="grid grid-cols-[1.35fr_1fr] gap-8">
 <div>
 
-<div class="muted text-sm mb-1">"I hire <code>Foo</code> only for <b>real</b> work:"</div>
+<div class="muted text-sm mb-1">"A position is created only for <b>real</b> work:"</div>
 
 ```java
-new Foo();                         // an instance
+new Foo();                         // a soldier
 Foo.helper();                      // a static call
 Class.forName("com.example.Foo");  // reflection
 ```
 
 <div v-click>
-<div class="muted text-sm mb-1 mt-6">"Not worth the paperwork:"</div>
+<div class="muted text-sm mb-1 mt-4">"Not worth the paperwork:"</div>
 
 ```java
-Foo f = null;            // just a name, Foo not hired
-Class<?> c = Foo.class;  // hired, onboarding not done
-int n = Foo.COUNT;       // constant copied, Foo not hired
+Foo f = null;            // just a word
+Class<?> c = Foo.class;  // created, not approved
+int n = Foo.COUNT;       // copied, no position
 ```
 
 </div>
@@ -326,19 +339,26 @@ int n = Foo.COUNT;       // constant copied, Foo not hired
 java -Xlog:class+load=info -jar app.jar
 ```
 
-<div class="text-sm muted">Who was hired, when, and <b>from which folder</b></div>
+<div class="text-sm muted">Which positions were created, when, and <b>from which van</b></div>
 
 </div>
 </div>
 
 <div v-click class="aside">
-Onboarding (<code>static {}</code>) happens once. Fail it — fired for good: <code>ExceptionInInitializerError</code> first, <code>NoClassDefFoundError</code> forever after.
+Approval (<code>static {}</code>) happens once. Fails? Nobody can ever be assigned: <code>ExceptionInInitializerError</code> first, <code>NoClassDefFoundError</code> forever after.
 </div>
 
-<!--
-The full lifecycle: loading (bytes → `defineClass()`), linking (verify the papers, give static fields default values, resolve names to addresses), initialization (`static {}`, once, thread-safe).
+<style>
+.slidev-code { --slidev-code-font-size: 12.5px; }
+h1 { margin-bottom: 1rem; }
+</style>
 
-Reading a non-constant static field also triggers hiring, same as `Foo.helper()`.
+<!--
+The full lifecycle: loading (job description from the van → `defineClass()`), linking (HQ checks the papers, the position gets its shared locker with default values, names become real addresses), initialization (`static {}`, once, thread-safe).
+
+Static fields belong to the position, not to a soldier: one shared locker for every driver.
+
+Reading a non-constant static field also creates the position, same as `Foo.helper()`.
 
 The constant gotcha: a compile-time constant (`static final` primitive or `String`) is copied into the caller by javac. `Foo` is not loaded at all. Change `COUNT`, recompile only `Foo` — the caller keeps the old value. Fun at deploy time.
 
@@ -360,12 +380,12 @@ The second error says "Could not initialize class Foo". People go hunting for a 
   <div v-click class="accent">Bootstrap (not Platform!)</div>
   <div class="mono">com.fasterxml.jackson.databind.ObjectMapper</div>
   <div v-click class="accent">App</div>
-  <div class="mono">com.acme.Foo <span class="muted text-sm">· in 3 folders</span></div>
-  <div v-click class="accent">App · first folder wins</div>
+  <div class="mono">com.acme.Foo <span class="muted text-sm">· in 3 vans</span></div>
+  <div v-click class="accent">App · first van wins</div>
 </div>
 
 <div v-click class="aside">
-<code>javax</code> doesn't mean "minor". The <code>java.xml</code> module is a matter of state.
+<code>javax</code> doesn't mean "minor". The <code>java.xml</code> module is a strategic matter.
 </div>
 
 <!--
@@ -390,7 +410,7 @@ String s = "hi";   // the JDK's String. Mine is never even opened
 </div>
 
 <div v-click>
-<div class="muted text-sm mb-1 mt-4">Attempt 2: my own loader, don't escalate</div>
+<div class="muted text-sm mb-1 mt-3">Attempt 2: my own loader, skip the chain of command</div>
 
 ```java
 defineClass("java.lang.String", bytes, 0, bytes.length);
@@ -400,24 +420,25 @@ defineClass("java.lang.String", bytes, 0, bytes.length);
 </div>
 
 <div v-click>
-<div class="muted text-sm mb-1 mt-4">Attempt 3: the official back door</div>
+<div class="muted text-sm mb-1 mt-3">Attempt 3: the official back door</div>
 
 ```bash
-java --patch-module java.base=my-string.jar -jar app.jar   # works. You're a JDK developer now
+java --patch-module java.base=my-string.jar -jar app.jar   # works. Welcome to the General Staff
 ```
 
 </div>
 
 <div v-click class="aside">
-Forms with the state seal are printed by the ministry only. Anyone else — forgery.
+Only the General Staff issues national insignia. A unit making its own — court-martial.
 </div>
 
 <style>
 .slidev-code { --slidev-code-font-size: 12.5px; }
+h1 { margin-bottom: 1rem; }
 </style>
 
 <!--
-Why the same name: the goal is to *replace* the system `String`. A class called `com.anton.String` is legal and boring — just a different class.
+Why the same name: the goal is to *replace* the system `String`. A class called `com.anton.String` is legal and boring — just a different position.
 
 Attempt 1: App sees the package `java.lang`, knows it belongs to `java.base`, and goes straight to Bootstrap. `-Xlog:class+load` shows `java.lang.String source: shared objects file` — your file is never opened.
 
@@ -437,19 +458,19 @@ layout: statement
 <v-clicks>
 
 <div class="mt-10 text-lg muted leading-9">
-The department that called <code>defineClass()</code> <b>owns</b> the employee for life<br>
-Same CV, two departments → <b>two different employees</b><br>
-<code>instanceof</code>, casts, <code>==</code> on <code>Class</code> — all check the stamp
+The unit that called <code>defineClass()</code> <b>owns</b> the position for life<br>
+Same job description, two units → <b>two different positions</b><br>
+<code>instanceof</code>, casts, <code>==</code> on <code>Class</code> — all check whose staff list
 </div>
 
-<div class="mt-8 text-xl">Ivanov from the ministry ≠ Ivanov from the contractor crew</div>
+<div class="mt-8 text-xl">"Driver" on our staff list ≠ "Driver" on the contractor's</div>
 
 </v-clicks>
 
 <!--
 "Owns for life": a class can't move to another loader. It's unloaded only together with its loader, when nothing references either of them.
 
-The package is part of the name: `com.a.Foo` and `com.b.Foo` are different classes anyway. Where the JAR lies on disk doesn't matter — only which loader defined the class.
+The package is part of the name: `com.a.Foo` and `com.b.Foo` are different positions anyway. Where the JAR lies on disk doesn't matter — only which loader defined the class.
 -->
 
 ---
@@ -458,63 +479,63 @@ The package is part of the name: `com.a.Foo` and `com.b.Foo` are different class
 
 # The most absurd error in Java
 
-<div class="card mono text-base leading-8 mt-8">
+<div class="card mono text-base leading-8 mt-6">
   <div style="color:#ff6b6b">java.lang.ClassCastException:</div>
   <div class="pl-4">class <b>com.example.Foo</b> cannot be cast to class <b>com.example.Foo</b></div>
-  <div v-click class="pl-4 muted">
+  <div v-click class="pl-4 muted text-sm leading-7">
     (com.example.Foo is in unnamed module of loader <span class="alt font-600">com.example.PluginClassLoader @6d06d69c</span>;<br>
     &nbsp;com.example.Foo is in unnamed module of loader <span class="accent font-600">'app'</span>)
   </div>
 </div>
 
-<div v-click class="mt-10 text-xl">
-Same signature — <b>Ivanov</b>. Different stamp — <span class="accent">the contractor's</span>. Rejected.<br>
-<span class="muted">The JVM even says whose stamp. We just never read past the first line.</span>
+<div v-click class="mt-8 text-xl">
+Is he a <code>Foo</code>? Yes. On <b>our</b> staff list? No — <span class="accent">the contractor's</span>. Rejected.<br>
+<span class="muted">The JVM even says whose list. We just never read past the first line.</span>
 </div>
 
 <!--
-The message names the document's department first, then the department of the type you cast to. Here: a document stamped by the contractor's `Foo`, cast to the ministry's `Foo`.
+The message names the object's loader first, then the loader of the type you cast to. Here: a soldier on the contractor's `Foo` position, cast to our `Foo`.
 -->
 
 ---
 
 ###### Part 3 · Plugins
 
-# The task: call in a crew
+# The task: call in contractors
 
-<div class="grid grid-cols-2 gap-6 mt-8 mb-8">
-  <div class="card"><div class="card-title">The ministry · host</div><div class="card-sub mono">jackson 2.16 · mysql 8.0</div></div>
-  <div class="card cool"><div class="card-title">A contractor crew · plugin</div><div class="card-sub mono">jackson 2.17 · mysql 8.4</div></div>
+<div class="grid grid-cols-2 gap-6 mt-6 mb-6">
+  <div class="card"><div class="card-title">The base · host</div><div class="card-sub mono">jackson 2.16 · mysql 8.0</div></div>
+  <div class="card cool"><div class="card-title">Contractors · plugin</div><div class="card-sub mono">jackson 2.17 · mysql 8.4</div></div>
 </div>
 
 <v-clicks>
 
-- The ministry calls crews **at runtime**. Each gets its own office — a new loader
-- HR never saw them — **Maven can't help**
+- The base calls contractors **at runtime**. Each gets its own staff list — a new loader
+- The checkpoint never saw their vans — **Maven can't help**
 
 </v-clicks>
 
-<div v-click class="mt-10 text-xl">
-<span class="accent">Goal:</span> <b>their own tools</b>, <b>our sockets</b>
+<div v-click class="mt-8 text-xl">
+<span class="accent">Goal:</span> <b>their own gear</b>, <b>our fuel and radio</b>
 </div>
 
 <div v-click class="aside">
-The ministry's habit: <b>"Leave your tools at the door. State-issued only — everything must be uniform."</b>
+The base's habit: <b>"Hand in your gear. Standard issue only — everything must be uniform."</b>
 </div>
 
 <!--
-The crew's loader has the host's App loader as its parent. So "upstairs" for the crew is the ministry.
+The contractor's loader has the host's App loader as its parent. So "up the chain" for the contractor is the base.
 
 The host is big and has its own libraries. We don't want every plugin author to match our versions.
 
-Tools = libraries the plugin uses inside. Sockets = types both sides touch. Hold on to that split — it's the whole of Part 3.
+Gear = libraries the plugin uses inside. Fuel and radio = types both sides touch. Hold on to that split — it's the whole of Part 3.
 -->
 
 ---
 
 ###### Part 3 · Step 1
 
-# Try 1: state-issued tools only
+# Try 1: standard issue only
 
 ```java
 var loader = new URLClassLoader(pluginJars, hostLoader);
@@ -525,36 +546,41 @@ p.run();   // the plugin calls a jackson 2.17 method
 
 <div class="mono text-sm mt-2" style="color:#ff6b6b">java.lang.NoSuchMethodError: com.fasterxml.jackson…</div>
 
-<div v-click class="flow mt-6">
-  <div class="card"><div class="card-sub">crew</div><div class="card-title">"need a jackson wrench"</div></div>
+<div v-click class="flow mt-5">
+  <div class="card"><div class="card-sub">contractor</div><div class="card-title">"jackson, size 2.17"</div></div>
   <div class="arrow">→</div>
-  <div class="card hot"><div class="card-sub">ministry</div><div class="card-title">"state-issued: 2.16"</div></div>
+  <div class="card hot"><div class="card-sub">the base</div><div class="card-title">"standard issue: 2.16"</div></div>
   <div class="arrow">→</div>
-  <div class="card"><div class="card-sub">crew's code</div><div class="card-title">built for 2.17</div></div>
+  <div class="card"><div class="card-sub">contractor's code</div><div class="card-title">doesn't fit</div></div>
 </div>
 
-<div v-click class="mt-8 text-xl">
-Parent-first: <span class="accent">state-issued always wins</span>. The crew's toolbox is never opened.
+<div v-click class="mt-6 text-xl">
+Parent-first: <span class="accent">standard issue always wins</span>. The contractor's own crates are never opened.
 </div>
+
+<style>
+.slidev-code { --slidev-code-font-size: 13px; }
+h1 { margin-bottom: 1rem; }
+</style>
 
 <!--
-Exactly the default from Part 2: a URLClassLoader asks upstairs first. The cast works here — `Plugin` comes from the ministry on both sides. But the plugin's jackson 2.17 is dead weight in the JAR.
+Exactly the default from Part 2: a URLClassLoader reports up first. The cast works here — `Plugin` comes from the base on both sides. But the plugin's jackson 2.17 is dead weight in the JAR.
 -->
 
 ---
 
 ###### Part 3 · Step 2
 
-# Try 2: own tools first
+# Try 2: own gear first
 
 ````md magic-move {lines: false}
 ```java
 class PluginClassLoader extends URLClassLoader {
     @Override
     protected Class<?> loadClass(String name, boolean resolve) {
-        // 1. already have it?
-        // 2. own toolbox first
-        // 3. not found → ask the ministry
+        // 1. already on staff?
+        // 2. own gear first
+        // 3. not found → ask the base
     }
 }
 ```
@@ -563,9 +589,9 @@ class PluginClassLoader extends URLClassLoader {
 class PluginClassLoader extends URLClassLoader {
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        Class<?> c = findLoadedClass(name);                // 1. already have it?
+        Class<?> c = findLoadedClass(name);                // 1. already on staff?
         if (c == null) {
-            try { c = findClass(name); }                   // 2. own toolbox first
+            try { c = findClass(name); }                   // 2. own gear first
             catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
         }
         return c;
@@ -580,7 +606,7 @@ h1 { margin-bottom: 1rem; }
 </style>
 
 <!--
-Flip the order: own JARs first, upstairs only if not found. The plugin now gets its own jackson 2.17.
+Flip the order: own JARs first, up the chain only if not found. The plugin now gets its own jackson 2.17.
 
 Real code wraps the body in `synchronized (getClassLoadingLock(name))` and ends with `if (resolve) resolveClass(c);`. Skipped to fit.
 -->
@@ -591,15 +617,15 @@ Real code wraps the body in `synchronized (getClassLoadingLock(name))` and ends 
 
 # Parent-first vs Child-first
 
-<div class="muted text-sm -mt-2 mb-3">Tonight's talk: who decides which tools are used?</div>
+<div class="muted text-sm -mt-2 mb-3">Tonight's talk: whose gear does the contractor use?</div>
 
 <div class="flex flex-col gap-3 text-sm">
-  <div v-click class="card hot py-2 mr-32"><b>Parent-first:</b> I escalate. Always. That's why the country has exactly one <code>String</code>.</div>
-  <div v-click class="card cool py-2 ml-32"><b>Child-first:</b> And that's why every crew works with rusty state-issued wrenches. I use my own toolbox.</div>
-  <div v-click class="card hot py-2 mr-32"><b>Parent-first:</b> In that toolbox you'll also find your own socket. Enjoy your <code>ClassCastException</code>.</div>
-  <div v-click class="card cool py-2 ml-32"><b>Child-first:</b> …fine. Sockets from you. Tools are mine.</div>
-  <div v-click class="card hot py-2 mr-32"><b>Parent-first:</b> So we're cooperating now?</div>
-  <div v-click class="card cool py-2 ml-32"><b>Child-first:</b> Don't put it in the minutes.</div>
+  <div v-click class="card hot py-2 mr-32"><b>Parent-first:</b> I report up. Always. That's why the whole army has exactly one <code>String</code>.</div>
+  <div v-click class="card cool py-2 ml-32"><b>Child-first:</b> And that's why contractors march in boots two sizes too small. I bring my own gear.</div>
+  <div v-click class="card hot py-2 mr-32"><b>Parent-first:</b> In your gear you'll also find your own radio. Enjoy your <code>ClassCastException</code>.</div>
+  <div v-click class="card cool py-2 ml-32"><b>Child-first:</b> …fine. Fuel and radio from you. Gear is mine.</div>
+  <div v-click class="card hot py-2 mr-32"><b>Parent-first:</b> So we're allies now?</div>
+  <div v-click class="card cool py-2 ml-32"><b>Child-first:</b> Don't put it in the report.</div>
 </div>
 
 <!--
@@ -610,7 +636,7 @@ This chat is a spoiler for the next slides. Child-first gives isolation, but bre
 
 ###### Part 3 · Step 3
 
-# Error: the crew brought its own socket
+# Error: the contractor brought its own radio
 
 ```java
 var loader = new PluginClassLoader(pluginJars, hostLoader);
@@ -618,22 +644,27 @@ Plugin p = (Plugin) loader.loadClass("com.acme.MyPlugin")
         .getDeclaredConstructor().newInstance();   // boom
 ```
 
-<div class="mono text-sm mt-2" style="color:#ff6b6b">ClassCastException: class com.acme.MyPlugin cannot be cast to class com.example.plugin.api.Plugin</div>
+<div class="mono text-xs mt-1" style="color:#ff6b6b">ClassCastException: class com.acme.MyPlugin cannot be cast to class com.example.plugin.api.Plugin</div>
 
-<div v-click class="mt-5 text-lg">
+<div v-click class="mt-4 text-base">
 — But <code>MyPlugin</code> implements <code>Plugin</code>! I wrote it myself!<br>
 — It does. <span class="accent">A different <code>Plugin</code>.</span>
 </div>
 
-<div v-click class="grid grid-cols-2 gap-6 mt-6 text-sm">
-  <div class="card cool"><span class="alt font-600">Tools</span> <span class="muted">· own first</span><br>Used <b>inside</b> the crew: jackson 2.17, mysql 8.4. The ministry doesn't care.</div>
-  <div class="card hot"><span class="accent font-600">Sockets</span> <span class="muted">· from the ministry</span><br>What <b>both sides</b> plug into: the <code>Plugin</code> interface, a <code>Logger</code>. Must be one standard.</div>
+<div v-click class="grid grid-cols-2 gap-6 mt-4 text-sm">
+  <div class="card cool py-3"><span class="alt font-600">Gear</span> <span class="muted">· own first</span><br>Used <b>inside</b> the contractor: jackson 2.17, mysql 8.4. The base doesn't care.</div>
+  <div class="card hot py-3"><span class="accent font-600">Fuel & radio</span> <span class="muted">· from the base</span><br>What <b>both sides</b> plug into: the <code>Plugin</code> interface, a <code>Logger</code>. One standard, or nothing works.</div>
 </div>
+
+<style>
+.slidev-code { --slidev-code-font-size: 12.5px; }
+h1 { font-size: 2rem !important; margin-bottom: 0.8rem; }
+</style>
 
 <!--
 This is the real message. The JVM names the object's class (`MyPlugin`), not the interface. The end of the message names the loaders: `MyPlugin` is in `PluginClassLoader`, `Plugin` is in `'app'`.
 
-Why: the plugin is a fat JAR with the API classes inside. Child-first found the crew's own copy of `Plugin` first — its own socket. The ministry's plug doesn't fit it.
+Why: the plugin is a fat JAR with the API classes inside. Child-first found the contractor's own copy of `Plugin` first — its own radio, on its own frequency. The base can't talk to it.
 
 The usual setup: `Plugin` lives in a thin `plugin-api` JAR. The host has it. The plugin depends on it with `<scope>provided</scope>`, so it's not packed. The shared list on the next slide is the safety net for when someone packs it anyway.
 -->
@@ -642,16 +673,16 @@ The usual setup: `Plugin` lives in a thin `plugin-api` JAR. The host has it. The
 
 ###### Part 3 · Step 4
 
-# Fix: sockets come from the ministry
+# Fix: fuel and radio come from the base
 
 ````md magic-move {lines: false}
 ```java
 class PluginClassLoader extends URLClassLoader {
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        Class<?> c = findLoadedClass(name);                // 1. already have it?
+        Class<?> c = findLoadedClass(name);                // 1. already on staff?
         if (c == null) {
-            try { c = findClass(name); }                   // 2. own toolbox first
+            try { c = findClass(name); }                   // 2. own gear first
             catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
         }
         return c;
@@ -661,67 +692,67 @@ class PluginClassLoader extends URLClassLoader {
 
 ```java
 class PluginClassLoader extends URLClassLoader {
-    static final List<String> SOCKETS =
+    static final List<String> SHARED =
         List.of("java.", "com.example.plugin.api.", "org.slf4j.");
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        if (isSocket(name)) return getParent().loadClass(name);   // 0. sockets → ministry
-        Class<?> c = findLoadedClass(name);                       // 1. already have it?
+        if (isShared(name)) return getParent().loadClass(name);   // 0. fuel & radio → the base
+        Class<?> c = findLoadedClass(name);                       // 1. already on staff?
         if (c == null) {
-            try { c = findClass(name); }                          // 2. own toolbox first
+            try { c = findClass(name); }                          // 2. own gear first
             catch (ClassNotFoundException e) { c = getParent().loadClass(name); }
         }
         return c;
     }
-    boolean isSocket(String n) { return SOCKETS.stream().anyMatch(n::startsWith); }
+    boolean isShared(String n) { return SHARED.stream().anyMatch(n::startsWith); }
 }
 ```
 ````
 
 <style>
 .slidev-code { --slidev-code-font-size: 12px; }
-h1 { margin-bottom: 1rem; }
+h1 { font-size: 2rem !important; margin-bottom: 0.8rem; }
 </style>
 
 <!--
-Same loader plus one list. Names from the list always come from upstairs. Everything else stays child-first.
+Same loader plus one list. Names from the list always come from the base. Everything else stays child-first.
 
-Now `Plugin` comes from the ministry on both sides, so the cast works.
+Now `Plugin` comes from the base on both sides, so the cast works.
 
-In real projects this list is usually called "shared" or "parent-first packages".
+In code we keep the real-world name: the shared list, a.k.a. parent-first packages.
 -->
 
 ---
 
 ###### Part 3 · Detour
 
-# What counts as a socket?
+# What must be standard?
 
-<div class="grid grid-cols-2 gap-6 mt-6">
+<div class="grid grid-cols-2 gap-6 mt-4">
   <div class="card hot">
-    <div class="tag hot mb-3">sockets · from the ministry</div>
+    <div class="tag hot mb-3">standard · from the base</div>
     <div class="mono text-sm leading-7">java.*<br>javax.{crypto,net,xml}.*<br>com.example.plugin.api.*<br>org.slf4j.*<br><span class="muted">&lt;metrics library&gt;</span></div>
   </div>
   <div class="card cool">
-    <div class="tag mb-3" style="color:var(--noir-alt);border-color:var(--noir-alt)">tools · own first</div>
+    <div class="tag mb-3" style="color:var(--noir-alt);border-color:var(--noir-alt)">own gear · own first</div>
     <div class="mono text-sm leading-7">everything else</div>
   </div>
 </div>
 
-<div v-click class="grid grid-cols-2 gap-6 mt-8 text-base">
-  <div><span class="accent">Fewer sockets</span> → stronger isolation</div>
-  <div><span class="alt">More sockets</span> → fewer duplicates, fewer border problems</div>
+<div v-click class="grid grid-cols-2 gap-6 mt-6 text-base">
+  <div><span class="accent">Less standard</span> → stronger isolation</div>
+  <div><span class="alt">More standard</span> → fewer duplicates, fewer border problems</div>
 </div>
 
 <div v-click class="aside">
-"An extension cord is a socket too, right?" No. <code>javax.inject</code> is just a tool.
+"A jerrycan is fuel too, right?" No. <code>javax.inject</code> is just their own gear.
 </div>
 
 <!--
 A deliberate trade-off, not a default.
 
-Why all of `javax.*` is a trap: a socket name goes only upstairs, with no fallback. `javax.inject`, `javax.servlet` and `javax.annotation` are normal libraries from Maven. The plugin ships one, the host doesn't, and you get `ClassNotFoundException`.
+Why all of `javax.*` is a trap: a shared name goes only to the base, with no fallback. `javax.inject`, `javax.servlet` and `javax.annotation` are normal libraries from Maven. The plugin ships one, the host doesn't, and you get `ClassNotFoundException`.
 
 Careful with `javax.xml.*` too: `javax.xml.bind` (JAXB) left the JDK in 11. If plugins bring their own JAXB, keep it child-first.
 -->
@@ -730,41 +761,47 @@ Careful with `javax.xml.*` too: `javax.xml.bind` (JAXB) left the JDK in 11. If p
 
 ###### Part 3 · Detour
 
-# SPI: the license registry
+# SPI: the register
 
-<div class="grid grid-cols-3 gap-4 mt-6">
+<div class="grid grid-cols-3 gap-4 mt-4">
 
 <div v-click class="card">
-  <div class="tag hot mb-3">01 · The license type</div>
+  <div class="tag hot mb-3">01 · The position</div>
   <div class="mono text-sm">java.sql.Driver</div>
-  <div class="text-sm muted mt-2">"I'm an interface in the JDK. Never met MySQL."</div>
+  <div class="text-sm muted mt-2">"A position defined by General Staff. Never met MySQL."</div>
 </div>
 
 <div v-click class="card">
-  <div class="tag hot mb-3">02 · A license</div>
+  <div class="tag hot mb-3">02 · An application</div>
   <div class="mono text-sm">META-INF/services/<br>java.sql.Driver</div>
-  <div class="text-sm muted mt-2">A note inside the MySQL JAR: "Licensed <code>Driver</code>: <code>com.mysql.cj.jdbc.Driver</code>."</div>
+  <div class="text-sm muted mt-2">A note in the MySQL van: "Candidate for <code>Driver</code>: <code>com.mysql.cj.jdbc.Driver</code>."</div>
 </div>
 
 <div v-click class="card">
   <div class="tag hot mb-3">03 · The lookup</div>
   <div class="mono text-sm">ServiceLoader<br>.load(Driver.class)</div>
-  <div class="text-sm muted mt-2">"I check the registry from the office the <b>thread</b> sits in. Default: the ministry."</div>
+  <div class="text-sm muted mt-2">"I read the notes from the unit the <b>thread</b> serves in. Default: the base."</div>
 </div>
 
 </div>
+
+<div class="mt-4 text-[0.95rem]">
 
 <v-clicks>
 
-- The crew's licenses are invisible from the ministry → pass the loader: `ServiceLoader.load(X.class, pluginLoader)`
-- Some SPIs hate two providers (hello, SLF4J bindings) → **ministry only**
+- The contractor's notes are invisible from the base → pass the loader: `ServiceLoader.load(X.class, pluginLoader)`
+- Some SPIs hate two providers (hello, SLF4J bindings) → **base only**
 
 </v-clicks>
+
+</div>
 
 <!--
 SPI = Service Provider Interface. Someone defines an interface, any JAR can ship an implementation, and the caller never names it in code. JDBC drivers, logging bindings, Jackson modules, JAXB.
 
-"The office the thread sits in" is the thread context class loader (TCCL): `Thread.currentThread().getContextClassLoader()`. By default it's App — the host. From an office you see its licenses and the licenses of every floor above it. Never the ones below.
+Yes, the JDBC interface is literally called `Driver` — a position on the staff list.
+
+"The unit the thread serves in" is the thread context class loader (TCCL): `Thread.currentThread().getContextClassLoader()`. By default it's App — the host. From a unit you see its notes and the notes of every unit up the chain. Never the ones below.
 -->
 
 ---
@@ -780,9 +817,9 @@ var conn = DriverManager.getConnection("jdbc:mysql://db/app", user, pass);
 
 <div class="mono text-sm mt-2" style="color:#ff6b6b">SQLException: No suitable driver found for jdbc:mysql://db/app</div>
 
-<div v-click class="card mt-8 text-sm">
-  <div class="card-title mb-2"><code>DriverManager</code> · the archivist since 1997 (JDK 1.1)</div>
-  <div>"I checked the registry once, from the ministry's office. The ministry's mysql driver? It's not the <code>Driver</code> your crew sees, so you can't have it. Your own driver? Not in my records."</div>
+<div v-click class="card mt-6 text-sm">
+  <div class="card-title mb-2"><code>DriverManager</code> · the quartermaster since 1997 (JDK 1.1)</div>
+  <div>"I read the register once, from the base's office. The base's mysql <code>Driver</code>? It's not the <code>Driver</code> your contractor sees, so you can't have it. Your own <code>Driver</code>? Not in my ledger."</div>
 </div>
 
 <div v-click class="mt-6 text-lg">
@@ -792,7 +829,7 @@ He checks everywhere <span class="accent">except where the driver is</span>.
 <!--
 Two reasons it fails:
 1. `DriverManager` scans `META-INF/services/java.sql.Driver` once, on first use, through the TCCL. That's the host's loader, so the plugin's driver is never found.
-2. The host's mysql 8.0 driver is registered. But `getConnection` checks that the caller's loader sees the same driver class. The crew has its own copy of `com.mysql.cj.jdbc.Driver` (child-first — two Ivanovs again), so the host driver is skipped.
+2. The host's mysql 8.0 driver is registered. But `getConnection` checks that the caller's loader sees the same driver class. The contractor has its own copy of `com.mysql.cj.jdbc.Driver` (child-first — two "Driver" positions again), so the host driver is skipped.
 -->
 
 ---
@@ -806,18 +843,23 @@ DriverManager.getConnection(url);   // 1st call: SQLException: No suitable drive
 DriverManager.getConnection(url);   // 2nd call: works?!
 ```
 
+<div class="text-[0.95rem]">
+
 <v-clicks>
 
-- **Call 1:** the archivist checks the ministry's driver — "does the crew see this exact class?"
-- To find out, he makes the crew load **its own** driver. Its `static {}` runs and registers it
-- But he's reading yesterday's printout → fail. **Call 2:** the new driver is on the list → works
+- **Call 1:** the quartermaster checks the base's driver — "does the contractor see this exact `Driver`?"
+- To find out, he makes the contractor load **its own** `Driver`. Its `static {}` runs and registers it
+- But he's working off yesterday's ledger → fail. **Call 2:** the new driver is in the ledger → works
 
 </v-clicks>
+
+</div>
 
 <div v-click>
 
 ```java
-Class.forName("com.mysql.cj.jdbc.Driver", true, pluginLoader);  // the fix: register it yourself, on start
+// the fix: register it yourself, on start
+Class.forName("com.mysql.cj.jdbc.Driver", true, pluginLoader);
 ```
 
 </div>
@@ -828,6 +870,7 @@ Monitoring says: <b>"flaky database"</b>. Reality: class loaders.
 
 <style>
 .slidev-code { --slidev-code-font-size: 12.5px; }
+h1 { margin-bottom: 1rem; }
 </style>
 
 <!--
@@ -844,19 +887,19 @@ Other fix: skip `DriverManager` and create the driver's `DataSource` directly. S
 
 ###### Part 3 · Plugins
 
-# Safety rules for crews
+# Safety rules for contractors
 
 <div class="grid grid-cols-[1.3fr_1fr] gap-8">
-<div>
+<div class="text-[0.95rem]">
 
 <v-clicks>
 
-1. **Sockets list** — API, logging, `java.*`
-2. **Thin API** — few sockets on the wall
+1. **Shared list** — fuel & radio: API, logging, `java.*`
+2. **Thin API** — few plugs on the border
 3. **Explicit loader** for `ServiceLoader`, `Class.forName`, JDBC
-4. **Move the thread** into the crew's office (TCCL), back in `finally`
-5. **When the crew leaves:** deregister drivers, stop threads, clear ThreadLocals, `close()` the loader
-6. **Test it** — two crews, two versions of one tool
+4. **Move the thread** into the contractor's unit (TCCL), back in `finally`
+5. **When contractors leave:** deregister drivers, stop threads, clear ThreadLocals, `close()` the loader
+6. **Test it** — two contractors, two versions of one library
 
 </v-clicks>
 
@@ -865,25 +908,29 @@ Other fix: skip `DriverManager` and create the driver's `DataSource` directly. S
 
 <div v-click class="card">
   <div class="card-title text-sm accent">Loader leak</div>
-  <div class="text-sm mt-2 muted">The crew left, but its drill is still plugged into the ministry's wall — a static field, a ThreadLocal, a thread. The office can't be cleared.</div>
+  <div class="text-sm mt-2 muted">The contractor left, but its truck is still hooked to the base's fuel line — a static field, a ThreadLocal, a thread. The hangar can't be freed.</div>
 </div>
 
 <div v-click class="card">
   <div class="card-title mono text-sm accent">LinkageError: loader constraint violation</div>
-  <div class="text-sm mt-2 muted">Two offices promised to use one form. Each printed its own.</div>
+  <div class="text-sm mt-2 muted">Two units agreed on one radio standard. Each brought its own radio.</div>
 </div>
 
 </div>
 </div>
+
+<style>
+h1 { margin-bottom: 1rem; }
+</style>
 
 <!--
-The rules follow the story: step 3–4 gave us the sockets list and the thin API, step 5 gave us explicit loaders and driver cleanup.
+The rules follow the story: steps 3–4 gave us the shared list and the thin API, step 5 gave us explicit loaders and driver cleanup.
 
 Rule 4: Jackson modules, JAXB and many SPIs use `Thread.currentThread().getContextClassLoader()`. Set it to the plugin loader before calling plugin code and restore it in `finally`.
 
 Rule 5: `deregisterDriver` checks that the caller sees the same driver class — call it from plugin code, from host code you get a `SecurityException`. A `URLClassLoader` keeps its JARs open; forget `close()`, and on Windows you can't even delete the old plugin JAR.
 
-Bonus trap — generic type erasure: `List<Foo>` is just `List` at runtime, so a wrong-loader `Foo` slips through and explodes later, on `get()`.
+Bonus trap — generic type erasure: `List<Foo>` is just `List` at runtime, so a `Foo` from the wrong loader slips through and explodes later, on `get()`.
 -->
 
 ---
@@ -892,25 +939,25 @@ Bonus trap — generic type erasure: `List<Foo>` is just `List` at runtime, so a
 
 # Can we skip the custom loader?
 
-<div class="flex justify-between text-xs mono faint mt-4 mb-1">
+<div class="flex justify-between text-xs mono faint mb-1">
   <span>← cheaper</span><span>more isolated →</span>
 </div>
 
-<div class="text-[0.95rem]">
-<div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
-  <b>Shading</b><span class="accent">a new passport</span><span class="muted">Packages renamed at build time. Misses class names in config files and strings built at runtime</span>
+<div class="text-sm">
+<div v-click class="grid grid-cols-[9rem_12rem_1fr] gap-4 py-2 border-b border-[var(--noir-border)]">
+  <b>Shading</b><span class="accent">new call signs</span><span class="muted">Packages renamed at build time. Misses class names in config files and strings built at runtime</span>
 </div>
-<div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
-  <b>JPMS</b><span class="accent">locked offices</span><span class="muted">Strong walls, but one version per module. Several versions only via <code>ModuleLayer</code> — a custom loader in disguise</span>
+<div v-click class="grid grid-cols-[9rem_12rem_1fr] gap-4 py-2 border-b border-[var(--noir-border)]">
+  <b>JPMS</b><span class="accent">restricted zones</span><span class="muted">Strong walls, but one version per module. Several versions only via <code>ModuleLayer</code> — a custom loader in disguise</span>
 </div>
-<div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
-  <b>Custom loader</b><span class="accent">your own crew offices</span><span class="muted">Full control, plugins at runtime — and every trap is yours</span>
+<div v-click class="grid grid-cols-[9rem_12rem_1fr] gap-4 py-2 border-b border-[var(--noir-border)]">
+  <b>Custom loader</b><span class="accent">your own contractor units</span><span class="muted">Full control, plugins at runtime — and every trap is yours</span>
 </div>
-<div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3 border-b border-[var(--noir-border)]">
-  <b>OSGi</b><span class="accent">bureaucracy squared</span><span class="muted">Every crew signs a contract with versions. Powerful, battle-tested, heavy</span>
+<div v-click class="grid grid-cols-[9rem_12rem_1fr] gap-4 py-2 border-b border-[var(--noir-border)]">
+  <b>OSGi</b><span class="accent">full military bureaucracy</span><span class="muted">Every unit signs a contract with versions. Powerful, battle-tested, heavy</span>
 </div>
-<div v-click class="grid grid-cols-[10rem_14rem_1fr] gap-4 py-3">
-  <b>Separate process</b><span class="accent">another building</span><span class="muted">Total isolation — but every question goes by mail: network, serialization, memory</span>
+<div v-click class="grid grid-cols-[9rem_12rem_1fr] gap-4 py-2">
+  <b>Separate process</b><span class="accent">a separate base</span><span class="muted">Total isolation — but every question goes by courier: network, serialization, memory</span>
 </div>
 </div>
 
@@ -918,8 +965,12 @@ Bonus trap — generic type erasure: `List<Foo>` is just `List` at runtime, so a
 Tomcat, Jenkins, Elasticsearch, IntelliJ plugins — custom loaders. Eclipse — OSGi. gRPC — shades Netty.
 </div>
 
+<style>
+h1 { margin-bottom: 1rem; }
+</style>
+
 <!--
-Shading in one sentence: renaming `com.google.common` to `myapp.shaded.com.google.common` changes the full class names. They become different people, and the conflict is gone without any loaders.
+Shading in one sentence: renaming `com.google.common` to `myapp.shaded.com.google.common` changes the full class names. They become different positions, and the conflict is gone without any loaders.
 -->
 
 ---
@@ -930,12 +981,12 @@ Shading in one sentence: renaming `com.google.common` to `myapp.shaded.com.googl
 
 <v-clicks>
 
-1. HR (Maven) approves **JARs** by name — fewest handshakes wins
-2. A department (class loader) hires **classes** — first folder wins
-3. Hiring is **lazy** → errors show up late
-4. **Class = name + loader** — always check the stamp
-5. Parent-first is the **default** — escalate, upstairs wins
-6. Plugins: **own tools** (child-first), **shared sockets**, explicit loader for SPI
+1. The checkpoint (Maven) lets **JARs** through by label — closest wins
+2. A unit (class loader) creates **positions** (classes) — first van wins
+3. The army is **lazy** → errors show up late
+4. **Class = name + loader** — always check whose staff list
+5. Parent-first is the **default** — report up, the chain of command wins
+6. Plugins: **own gear** (child-first), **shared fuel & radio**, explicit loader for SPI
 
 </v-clicks>
 
@@ -949,7 +1000,7 @@ layout: statement
 <span class="line-through decoration-[var(--noir-accent)] decoration-2">Foo cannot be cast to Foo</span>
 </div>
 
-<div class="mt-3 muted">now you know whose stamp it is</div>
+<div class="mt-3 muted">now you know whose staff list it's on</div>
 
 <!--
 Questions people usually ask:
@@ -958,7 +1009,7 @@ Q: Why doesn't Maven just pick the newest version?
 A: Newest isn't always safe either — 3.0 can break code built for 2.x. Maven picks predictably; the enforcer tells you when it hurts.
 
 Q: Why not make everything child-first?
-A: Then the crew's `Plugin` ≠ the ministry's. Whatever crosses the border must be one class.
+A: Then the contractor's `Plugin` ≠ the base's. Whatever crosses the border must be one class.
 
 Q: Then why not share everything?
 A: That's parent-first again. The plugin gets the host's versions — back to Try 1.
