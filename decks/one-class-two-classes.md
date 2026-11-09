@@ -861,7 +861,8 @@ Careful with `javax.xml.*` too: `javax.xml.bind` (JAXB) left the JDK in 11. If p
 <v-clicks>
 
 - The contractor's notes are invisible from the base → pass the loader: `ServiceLoader.load(X.class, pluginLoader)`
-- Some SPIs hate two providers (hello, SLF4J bindings) → **base only**
+- Many-seat positions (JDBC `Driver`): five candidates is fine — next slide
+- One-seat positions (SLF4J binding): two candidates → coin toss → **the base fills it, plugins don't apply**
 
 </v-clicks>
 
@@ -873,6 +874,41 @@ SPI = Service Provider Interface. Someone defines an interface, any JAR can ship
 Yes, the JDBC interface is literally called `Driver` — a position on the staff list.
 
 "The unit the thread serves in" is the thread context class loader (TCCL): `Thread.currentThread().getContextClassLoader()`. By default it's App — the host. From a unit you see its notes and the notes of every unit up the chain. Never the ones below.
+-->
+
+---
+
+###### Part 3 · Detour
+
+# Five candidates, one job
+
+<div class="muted text-sm -mt-2 mb-4">
+<code>getConnection("jdbc:postgresql://db/app")</code> — roll call at the quartermaster's
+</div>
+
+<div class="flex flex-col gap-2 text-sm">
+  <div v-click class="card py-2 mr-32"><b>Quartermaster:</b> "<code>jdbc:postgresql</code> — who drives this truck?"</div>
+  <div v-click class="card py-2 ml-32"><b>MySQL:</b> <span class="muted">…not my licence.</span> <span class="faint mono text-xs">→ null</span></div>
+  <div v-click class="card py-2 ml-32"><b>H2:</b> <span class="muted">…not my licence.</span> <span class="faint mono text-xs">→ null</span></div>
+  <div v-click class="card hot py-2 ml-32"><b>Postgres:</b> "Me." <span class="accent mono text-xs">→ Connection</span></div>
+</div>
+
+<div v-click class="mt-6 text-base">
+Everyone gets <b>registered</b>. The job goes to <span class="accent">the first one who says "me"</span>, asked in registration order.
+</div>
+
+<div v-click class="aside">
+Two drivers both say "me" to <code>jdbc:mysql</code>? First registered wins — i.e. <b>classpath order</b>. A quiet lottery.
+</div>
+
+<!--
+`DriverManager` loads every driver it finds via `ServiceLoader` once, and each one registers itself. On `getConnection` it walks the list in registration order and calls `driver.connect(url, props)`. A driver that doesn't recognise the URL prefix returns `null` — "not my licence, next". First non-null wins.
+
+So five drivers is fine: each has its own specialty (URL prefix). Trouble only starts when two claim the same prefix — e.g. `mysql-connector-j` and an old MariaDB 2.x connector, both accepting `jdbc:mysql:`.
+
+`ServiceLoader` itself decides nothing — it hands back all candidates. Picking is the caller's job: ask each (JDBC), take the first with a warning (SLF4J), sort by priority, configure explicitly (`driverClassName` in Hikari, `-Dslf4j.provider`), or fail on more than one.
+
+Peek at the order: `DriverManager.drivers().forEach(d -> System.out.println(d.getClass().getName()));`
 -->
 
 ---
