@@ -1,0 +1,316 @@
+:root,
+html.dark {
+  --noir-bg: #0b0b0d;
+  --noir-surface: #131317;
+  --noir-border: #26262c;
+  --noir-text: #e6e6ea;
+  --noir-muted: #8a8a94;
+  --noir-faint: #4a4a52;
+  --noir-accent: #f89820;
+  --noir-accent-soft: rgba(248, 152, 32, 0.12);
+  --noir-alt: #7cc4fa;
+  --noir-alt-soft: rgba(124, 196, 250, 0.12);
+
+  --slidev-theme-primary: var(--noir-accent);
+  --slidev-slide-container-background: var(--noir-bg);
+  --slidev-code-background: var(--noir-surface);
+  --slidev-code-foreground: var(--noir-text);
+  --slidev-code-font-size: 14px;
+  --slidev-code-line-height: 1.6;
+  --slidev-code-padding: 16px 20px;
+  --slidev-code-radius: 10px;
+  --slidev-code-margin: 12px 0;
+}
+
+#slide-content,
+.slidev-page,
+.slidev-layout {
+  background: var(--noir-bg);
+}
+
+.slidev-layout {
+  position: relative;
+  color: var(--noir-text);
+  font-weight: 400;
+  padding: 3rem 4rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- typography ---------- */
+
+.slidev-layout h1 {
+  font-size: 2.4rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin-bottom: 1.6rem;
+}
+
+.slidev-layout h2 {
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+/* `###### Label` above a title → small mono eyebrow */
+.slidev-layout h6 {
+  font-family: var(--slidev-code-font-family, 'JetBrains Mono', monospace);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--noir-accent);
+  opacity: 1;
+  margin-bottom: 0.6rem;
+}
+
+.slidev-layout p {
+  line-height: 1.65;
+}
+
+.slidev-layout li {
+  line-height: 1.9;
+}
+
+.slidev-layout ul {
+  list-style: none;
+}
+
+.slidev-layout ul > li {
+  position: relative;
+}
+
+.slidev-layout ul > li::before {
+  content: '';
+  position: absolute;
+  left: -1.05em;
+  top: 0.85em;
+  width: 0.4em;
+  height: 1px;
+  background: var(--noir-accent);
+}
+
+.slidev-layout ol {
+  list-style: none;
+  counter-reset: noir;
+}
+
+.slidev-layout ol > li {
+  counter-increment: noir;
+  position: relative;
+}
+
+.slidev-layout ol > li::before {
+  content: counter(noir, decimal-leading-zero);
+  position: absolute;
+  left: -2em;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  top: 0.2em;
+  color: var(--noir-accent);
+}
+
+.slidev-layout ol > li {
+  margin-left: 2em;
+}
+
+.slidev-layout strong,
+.slidev-layout b {
+  color: #fff;
+  font-weight: 600;
+}
+
+.slidev-layout em {
+  color: var(--noir-muted);
+}
+
+.slidev-layout :not(pre) > code {
+  font-size: 0.88em;
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  background: var(--noir-surface);
+  border: 1px solid var(--noir-border);
+  color: var(--noir-accent);
+}
+
+.slidev-layout blockquote {
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--noir-accent);
+  border-radius: 0;
+  padding: 0.2rem 0 0.2rem 1rem;
+  color: var(--noir-muted);
+  font-size: 0.95rem;
+}
+
+.slidev-layout a {
+  color: var(--noir-accent);
+}
+
+.slidev-layout pre.shiki,
+.slidev-layout .slidev-code {
+  border: 1px solid var(--noir-border);
+}
+
+/* ---------- layouts ---------- */
+
+.slidev-layout.cover,
+.slidev-layout.end,
+.slidev-layout.statement,
+.slidev-layout.center {
+  display: grid;
+  height: 100%;
+  place-content: center;
+}
+
+.slidev-layout.cover {
+  place-content: center start;
+  padding-left: 6rem;
+}
+
+.slidev-layout.cover h1 {
+  font-size: 4.2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin-bottom: 1.2rem;
+}
+
+.slidev-layout.cover h1 + p {
+  font-size: 1.25rem;
+  color: var(--noir-muted);
+  margin-top: 0;
+}
+
+.slidev-layout.statement {
+  text-align: center;
+}
+
+.slidev-layout.statement h1 {
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.slidev-layout.end {
+  text-align: center;
+}
+
+/* ---------- small building blocks ---------- */
+
+/* column so .aside can sit at the bottom without overlapping content */
+.slidev-layout.default {
+  display: flex;
+  flex-direction: column;
+}
+
+/* no shrinking: a squeezed code block would scroll instead of showing */
+.slidev-layout.default > * {
+  flex-shrink: 0;
+}
+
+/* bottom-of-slide one-liner: analogy, takeaway; margin-top:auto pushes it down */
+.aside {
+  margin-top: auto;
+  font-size: 0.95rem;
+  color: var(--noir-muted);
+  padding-left: 1rem;
+  border-left: 2px solid var(--noir-faint);
+}
+
+.aside b,
+.aside strong {
+  color: var(--noir-text);
+}
+
+/* bordered card */
+.card {
+  background: var(--noir-surface);
+  border: 1px solid var(--noir-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.card.hot {
+  border-color: var(--noir-accent);
+  background: var(--noir-accent-soft);
+}
+
+.card.cool {
+  border-color: var(--noir-alt);
+  background: var(--noir-alt-soft);
+}
+
+.card-title {
+  font-weight: 600;
+  color: #fff;
+}
+
+.card-sub {
+  font-size: 0.85rem;
+  color: var(--noir-muted);
+}
+
+/* horizontal pipeline: card → card → card */
+.flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.flow > .card {
+  flex: 1;
+  padding: 0.9rem 1rem;
+}
+
+.flow .card-title {
+  white-space: nowrap;
+}
+
+.flow > .arrow {
+  align-self: center;
+  color: var(--noir-faint);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* label pill */
+.tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--noir-border);
+  color: var(--noir-muted);
+}
+
+.tag.hot {
+  color: var(--noir-accent);
+  border-color: var(--noir-accent);
+}
+
+/* ---------- page counter ---------- */
+
+.noir-footer {
+  position: absolute;
+  right: 2rem;
+  bottom: 1.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--noir-muted);
+}
+
+.noir-footer span {
+  color: var(--noir-faint);
+}
+
+/* ---------- color utilities: last, so they beat .card-title & co ---------- */
+
+.accent { color: var(--noir-accent); }
+.alt { color: var(--noir-alt); }
+.muted { color: var(--noir-muted); }
+.faint { color: var(--noir-faint); }
+.mono { font-family: 'JetBrains Mono', monospace; }

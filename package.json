@@ -1,0 +1,12 @@
+{
+  "name": "talks",
+  "private": true,
+  "scripts": {
+    "build": "bash build.sh",
+    "dev": "slidev"
+  },
+  "devDependencies": {
+    "@slidev/cli": "^53.0.0",
+    "@slidev/theme-default": "^0.25.0"
+  }
+}
